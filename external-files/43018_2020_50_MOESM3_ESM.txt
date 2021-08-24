@@ -1,0 +1,271 @@
+Gene_somatic	Pathway	Type	Pathway_abb	Gene_germline
+APEX1	base excision repair	core	BER	APC
+FEN1	base excision repair	core	BER	BMPR1A
+LIG1	base excision repair	core	BER	SMAD4
+LIG3	base excision repair	core	BER	BRCA1
+MBD4	base excision repair	core	BER	BRCA2
+MPG	base excision repair	core	BER	CDKN2A
+MUTYH	base excision repair	core	BER	FLCN
+NEIL1	base excision repair	core	BER	MEN1
+NEIL2	base excision repair	core	BER	MLH1
+NEIL3	base excision repair	core	BER	MSH2
+NTHL1	base excision repair	core	BER	MSH6
+OGG1	base excision repair	core	BER	PMS2
+PNKP	base excision repair	core	BER	MUTYH
+POLB	base excision repair	core	BER	TP53
+SMUG1	base excision repair	core	BER	PTEN
+TDG	base excision repair	core	BER	SDHB
+UNG	base excision repair	core	BER	SDHD
+XRCC1	base excision repair	core	BER	SDHC
+ATM	cell cycle regulation	core	CCR	STK11
+ATR	cell cycle regulation	core	CCR	TERT
+ATRIP	cell cycle regulation	core	CCR	VHL
+CDC25A	cell cycle regulation	core	CCR	RET
+CDC25B	cell cycle regulation	core	CCR	SDHAF2
+CDC25C	cell cycle regulation	core	CCR	PRKAR1A
+CDK1	cell cycle regulation	core	CCR	TMEM127
+CDKN1A	cell cycle regulation	core	CCR	MAX
+CHEK1	cell cycle regulation	core	CCR	CHEK2
+CHEK2	cell cycle regulation	core	CCR	BAP1
+HUS1	cell cycle regulation	accessory	CCR	FH
+MRE11A	cell cycle regulation	accessory	CCR	SMARCB1
+NBN	cell cycle regulation	accessory	CCR	CDH1
+RAD1	cell cycle regulation	accessory	CCR	CDC73
+RAD17	cell cycle regulation	accessory	CCR	GATA2
+RAD50	cell cycle regulation	accessory	CCR	CDKN1B
+RAD9A	cell cycle regulation	accessory	CCR	ATM
+RAD9B	cell cycle regulation	accessory	CCR	DKC1
+RFC2	cell cycle regulation	accessory	CCR	EPCAM
+RFC3	cell cycle regulation	accessory	CCR	KIT
+RFC4	cell cycle regulation	accessory	CCR	MET
+RFC5	cell cycle regulation	accessory	CCR	PDGFRA
+RPA1	cell cycle regulation	accessory	CCR	PTCH1
+RPA2	cell cycle regulation	accessory	CCR	TERC
+RPA3	cell cycle regulation	accessory	CCR	TINF2
+SMC1A	cell cycle regulation	accessory	CCR	WRN
+TOPBP1	cell cycle regulation	core	CCR	RECQL4
+TP53	cell cycle regulation	core	CCR	AKT1
+WEE1	cell cycle regulation	accessory	CCR	ALK
+ATM	DSB chromatin signaling	core	DSB	ATR
+BABAM1	DSB chromatin signaling	accessory	DSB	AXIN2
+BABAM2	DSB chromatin signaling	accessory	DSB	BARD1
+BRCA1	DSB chromatin signaling	core	DSB	BLM
+BRCC3	DSB chromatin signaling	core	DSB	BRIP1
+CHD3	DSB chromatin signaling	accessory	DSB	CBL
+FAM175A	DSB chromatin signaling	accessory	DSB	CDK4
+H2AFX	DSB chromatin signaling	core	DSB	DICER1
+HERC2	DSB chromatin signaling	accessory	DSB	EGFR
+MDC1	DSB chromatin signaling	accessory	DSB	ERCC2
+MRE11A	DSB chromatin signaling	accessory	DSB	ERCC3
+NBN	DSB chromatin signaling	accessory	DSB	ERCC4
+OTUB1	DSB chromatin signaling	accessory	DSB	ERCC5
+RAD50	DSB chromatin signaling	accessory	DSB	ETV6
+RNF168	DSB chromatin signaling	core	DSB	EZH2
+RNF169	DSB chromatin signaling	core	DSB	ABRAXAS
+RNF8	DSB chromatin signaling	core	DSB	FANCA
+TP53BP1	DSB chromatin signaling	core	DSB	FANCC
+TRIM28	DSB chromatin signaling	accessory	DSB	GREM1
+TRIP12	DSB chromatin signaling	accessory	DSB	HNF1A
+UBE2N	DSB chromatin signaling	core	DSB	HRAS
+UBR5	DSB chromatin signaling	accessory	DSB	IDH1
+UIMC1	DSB chromatin signaling	accessory	DSB	MITF
+USP16	DSB chromatin signaling	accessory	DSB	MRE11
+USP3	DSB chromatin signaling	accessory	DSB	NBN
+USP44	DSB chromatin signaling	accessory	DSB	NF1
+ATM	homology directed repair	accessory	HDR	NF2
+BAP1	homology directed repair	accessory	HDR	NSD1
+BARD1	homology directed repair	core	HDR	PALB2
+BLM	homology directed repair	core	HDR	PAX5
+BRCA1	homology directed repair	core	HDR	PHOX2B
+BRCA2	homology directed repair	core	HDR	PIK3CA
+BRIP1	homology directed repair	core	HDR	PMS1
+CUL3	homology directed repair	accessory	HDR	POLD1
+DNA2	homology directed repair	core	HDR	POLE
+EME1	homology directed repair	accessory	HDR	PTPN11
+ERCC1	homology directed repair	accessory	HDR	RAD50
+ERCC4	homology directed repair	accessory	HDR	RAD51
+EXO1	homology directed repair	core	HDR	RAD51B
+FBXO18	homology directed repair	accessory (negative regulator)	HDR	RAD51C
+GEN1	homology directed repair	accessory	HDR	RAD51D
+HELQ	homology directed repair	accessory	HDR	RB1
+MRE11A	homology directed repair	core	HDR	RUNX1
+MUS81	homology directed repair	accessory	HDR	SDHA
+NBN	homology directed repair	core	HDR	SH2D1A
+PALB2	homology directed repair	core	HDR	SMARCA4
+PARPBP	homology directed repair	accessory (negative regulator)	HDR	SUFU
+PCNA	homology directed repair	accessory	HDR	TGFBR1
+POLD1	homology directed repair	accessory	HDR	TSC1
+POLK	homology directed repair	accessory	HDR	TSC2
+POLN	homology directed repair	accessory	HDR	WT1
+PSIP1	homology directed repair	accessory	HDR	NA
+RAD50	homology directed repair	core	HDR	NA
+RAD51	homology directed repair	core	HDR	NA
+RAD51AP1	homology directed repair	accessory	HDR	NA
+RAD51B	homology directed repair	core	HDR	NA
+RAD51C	homology directed repair	core	HDR	NA
+RAD51D	homology directed repair	core	HDR	NA
+RAD52	homology directed repair	core	HDR	NA
+RAD54L	homology directed repair	core	HDR	NA
+RBBP8	homology directed repair	core	HDR	NA
+RECQL5	homology directed repair	accessory (negative regulator)	HDR	NA
+RIF1	homology directed repair	accessory (negative regulator)	HDR	NA
+RMI1	homology directed repair	accessory	HDR	NA
+RMI2	homology directed repair	accessory	HDR	NA
+RPA1	homology directed repair	accessory	HDR	NA
+RPA2	homology directed repair	accessory	HDR	NA
+RPA3	homology directed repair	accessory	HDR	NA
+RTEL1	homology directed repair	accessory (negative regulator)	HDR	NA
+SLX1A	homology directed repair	accessory	HDR	NA
+SLX4	homology directed repair	accessory	HDR	NA
+TOP3A	homology directed repair	accessory	HDR	NA
+TP53BP1	homology directed repair	accessory (negative regulator)	HDR	NA
+USP11	homology directed repair	accessory	HDR	NA
+WRN	homology directed repair	core	HDR	NA
+XRCC2	homology directed repair	core	HDR	NA
+XRCC3	homology directed repair	core	HDR	NA
+BLM	interstrand crosslink repair	accessory	ISCR	NA
+BRCA1	interstrand crosslink repair	core	ISCR	NA
+BRCA2	interstrand crosslink repair	core	ISCR	NA
+BRIP1	interstrand crosslink repair	accessory	ISCR	NA
+EME1	interstrand crosslink repair	core	ISCR	NA
+ERCC1	interstrand crosslink repair	core	ISCR	NA
+ERCC4	interstrand crosslink repair	core	ISCR	NA
+FAN1	interstrand crosslink repair	accessory	ISCR	NA
+FAAP100	interstrand crosslink repair	accessory	ISCR	NA
+FAAP20	interstrand crosslink repair	accessory	ISCR	NA
+FAAP24	interstrand crosslink repair	accessory	ISCR	NA
+FAN1	interstrand crosslink repair	core	ISCR	NA
+FANCA	interstrand crosslink repair	core	ISCR	NA
+FANCB	interstrand crosslink repair	core	ISCR	NA
+FANCC	interstrand crosslink repair	core	ISCR	NA
+FANCD2	interstrand crosslink repair	core	ISCR	NA
+FANCE	interstrand crosslink repair	core	ISCR	NA
+FANCF	interstrand crosslink repair	core	ISCR	NA
+FANCG	interstrand crosslink repair	core	ISCR	NA
+FANCI	interstrand crosslink repair	core	ISCR	NA
+FANCL	interstrand crosslink repair	core	ISCR	NA
+FANCM	interstrand crosslink repair	core	ISCR	NA
+HELQ	interstrand crosslink repair	accessory	ISCR	NA
+MAD2L2	interstrand crosslink repair	accessory	ISCR	NA
+MUS81	interstrand crosslink repair	core	ISCR	NA
+PALB2	interstrand crosslink repair	core	ISCR	NA
+POLN	interstrand crosslink repair	accessory	ISCR	NA
+RAD51	interstrand crosslink repair	accessory	ISCR	NA
+RAD51B	interstrand crosslink repair	core	ISCR	NA
+RAD51C	interstrand crosslink repair	core	ISCR	NA
+RAD51D	interstrand crosslink repair	core	ISCR	NA
+REV1	interstrand crosslink repair	accessory	ISCR	NA
+REV3L	interstrand crosslink repair	accessory	ISCR	NA
+RMI1	interstrand crosslink repair	accessory	ISCR	NA
+RMI2	interstrand crosslink repair	accessory	ISCR	NA
+SLX4	interstrand crosslink repair	core	ISCR	NA
+TOP3A	interstrand crosslink repair	accessory	ISCR	NA
+UBE2T	interstrand crosslink repair	accessory	ISCR	NA
+USP1	interstrand crosslink repair	accessory	ISCR	NA
+WDR48	interstrand crosslink repair	accessory	ISCR	NA
+XRCC2	interstrand crosslink repair	accessory	ISCR	NA
+ERCC1	microhomology mediated end joining	accessory	MMEJ	NA
+ERCC4	microhomology mediated end joining	accessory	MMEJ	NA
+LIG1	microhomology mediated end joining	core	MMEJ	NA
+LIG3	microhomology mediated end joining	core	MMEJ	NA
+MRE11A	microhomology mediated end joining	core	MMEJ	NA
+NBN	microhomology mediated end joining	core	MMEJ	NA
+PARP1	microhomology mediated end joining	core	MMEJ	NA
+POLQ	microhomology mediated end joining	core	MMEJ	NA
+RAD50	microhomology mediated end joining	core	MMEJ	NA
+RBBP8	microhomology mediated end joining	core	MMEJ	NA
+RPA1	microhomology mediated end joining	accessory	MMEJ	NA
+RPA2	microhomology mediated end joining	accessory	MMEJ	NA
+RPA3	microhomology mediated end joining	accessory	MMEJ	NA
+XRCC1	microhomology mediated end joining	accessory	MMEJ	NA
+EXO1	mismatch repair	core	MMR	NA
+LIG1	mismatch repair	core	MMR	NA
+MLH1	mismatch repair	core	MMR	NA
+MLH3	mismatch repair	core	MMR	NA
+MSH2	mismatch repair	core	MMR	NA
+MSH3	mismatch repair	core	MMR	NA
+MSH6	mismatch repair	core	MMR	NA
+PMS1	mismatch repair	core	MMR	NA
+PMS2	mismatch repair	core	MMR	NA
+POLD1	mismatch repair	accessory	MMR	NA
+RFC1	mismatch repair	accessory	MMR	NA
+APLF	nonhomologous end joining	accessory	NHEJ	NA
+DCLRE1C	nonhomologous end joining	core	NHEJ	NA
+LIG4	nonhomologous end joining	core	NHEJ	NA
+NHEJ1	nonhomologous end joining	core	NHEJ	NA
+PNKP	nonhomologous end joining	accessory	NHEJ	NA
+POLL	nonhomologous end joining	accessory	NHEJ	NA
+POLM	nonhomologous end joining	accessory	NHEJ	NA
+PRKDC	nonhomologous end joining	core	NHEJ	NA
+RIF1	nonhomologous end joining	accessory	NHEJ	NA
+TDP1	nonhomologous end joining	accessory	NHEJ	NA
+TDP2	nonhomologous end joining	accessory	NHEJ	NA
+TP53BP1	nonhomologous end joining	core	NHEJ	NA
+XRCC4	nonhomologous end joining	core	NHEJ	NA
+XRCC5	nonhomologous end joining	core	NHEJ	NA
+XRCC6	nonhomologous end joining	core	NHEJ	NA
+DDB1	nucleotide excision repair	accessory	NER	NA
+DDB2	nucleotide excision repair	accessory	NER	NA
+ERCC1	nucleotide excision repair	core	NER	NA
+ERCC2	nucleotide excision repair	core	NER	NA
+ERCC3	nucleotide excision repair	core	NER	NA
+ERCC4	nucleotide excision repair	core	NER	NA
+ERCC5	nucleotide excision repair	core	NER	NA
+ERCC6	nucleotide excision repair	core	NER	NA
+ERCC8	nucleotide excision repair	core	NER	NA
+GTF2H1	nucleotide excision repair	accessory	NER	NA
+GTF2H2	nucleotide excision repair	accessory	NER	NA
+GTF2H3	nucleotide excision repair	accessory	NER	NA
+GTF2H4	nucleotide excision repair	accessory	NER	NA
+LIG3	nucleotide excision repair	core	NER	NA
+PCNA	nucleotide excision repair	accessory	NER	NA
+POLD1	nucleotide excision repair	accessory	NER	NA
+POLE	nucleotide excision repair	accessory	NER	NA
+POLK	nucleotide excision repair	accessory	NER	NA
+RAD23B	nucleotide excision repair	accessory	NER	NA
+RPA1	nucleotide excision repair	accessory	NER	NA
+RPA2	nucleotide excision repair	accessory	NER	NA
+RPA3	nucleotide excision repair	accessory	NER	NA
+USP7	nucleotide excision repair	accessory	NER	NA
+UVSSA	nucleotide excision repair	accessory	NER	NA
+XAB2	nucleotide excision repair	core	NER	NA
+XPA	nucleotide excision repair	core	NER	NA
+XPC	nucleotide excision repair	core	NER	NA
+XRCC1	nucleotide excision repair	core	NER	NA
+APLF	single strand break repair	accessory	SSBR	NA
+APTX	single strand break repair	accessory	SSBR	NA
+FEN1	single strand break repair	accessory	SSBR	NA
+LIG1	single strand break repair	core	SSBR	NA
+LIG3	single strand break repair	core	SSBR	NA
+PARG	single strand break repair	core	SSBR	NA
+PARP1	single strand break repair	core	SSBR	NA
+PARP2	single strand break repair	core	SSBR	NA
+PNKP	single strand break repair	accessory	SSBR	NA
+TDP1	single strand break repair	accessory	SSBR	NA
+XRCC1	single strand break repair	core	SSBR	NA
+FAAP100	translesion synthesis	accessory	TS	NA
+FAAP20	translesion synthesis	accessory	TS	NA
+FANCA	translesion synthesis	accessory	TS	NA
+FANCB	translesion synthesis	accessory	TS	NA
+FANCC	translesion synthesis	accessory	TS	NA
+FANCE	translesion synthesis	accessory	TS	NA
+FANCF	translesion synthesis	accessory	TS	NA
+FANCG	translesion synthesis	accessory	TS	NA
+FANCL	translesion synthesis	accessory	TS	NA
+MAD2L2	translesion synthesis	core	TS	NA
+PCNA	translesion synthesis	core	TS	NA
+POLD2	translesion synthesis	core	TS	NA
+POLD3	translesion synthesis	core	TS	NA
+POLH	translesion synthesis	core	TS	NA
+POLI	translesion synthesis	core	TS	NA
+POLK	translesion synthesis	core	TS	NA
+RAD18	translesion synthesis	core	TS	NA
+REV1	translesion synthesis	core	TS	NA
+REV3L	translesion synthesis	core	TS	NA
+UBE2A	translesion synthesis	core	TS	NA
+UBE2B	translesion synthesis	core	TS	NA
+USP1	translesion synthesis	accessory	TS	NA
+RAD52	single strand annealing	core	SSA	NA
+ERCC1	single strand annealing	core	SSA	NA
+ERCC4	single strand annealing	core	SSA	NA
+SLX4	single strand annealing	core	SSA	NA
