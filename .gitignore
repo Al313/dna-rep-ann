@@ -1,6 +1,7 @@
 all-diplotypes-metadata-merged.txt
 external-files/geneDriverAnnotator
 diplotype-output
+clonality-ms-combined
 timing-ms-combined
 *.png
 *.pdf

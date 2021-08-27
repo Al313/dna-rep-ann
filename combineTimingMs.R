@@ -2,18 +2,29 @@
 
 # Loading required libraries
 
-library(epitools)
-library(rcompanion)
-library(ggplot2)
-library(ggrepel)
-library(ggpubr)
-library(gridExtra)
-library(gghighlight)
+# library(epitools)
+# library(rcompanion)
+# library(ggplot2)
+# library(ggrepel)
+# library(ggpubr)
+# library(gridExtra)
+# library(gghighlight)
 library(stringr)
 library(dplyr)
 
+if (dir.exists("/hpc/cuppen/")){
 
-# args <- commandArgs(trailingOnly=T)
+  base_dir <- "/hpc/cuppen/projects/P0013_WGS_patterns_Diagn/"
+  devtools::load_all(paste0(base_dir,'/CHORD/processed/scripts_main/mutSigExtractor/'))
+
+} else {
+
+  library(mutSigExtractor)
+}
+
+
+args <- commandArgs(trailingOnly=T)
+
 
 
 # Assigning path directories
@@ -42,12 +53,19 @@ if (dir.exists("/hpc/cuppen/")){
 }
 
 
+if (dir.exists("/hpc/cuppen/")){
+  manifest <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/external-files/manifest_HMF_PCAWG.gene_ann.txt.gz", sep = "\t",
+                       header = T, stringsAsFactors = F)
+} else {
+  manifest <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/external-files/manifest_HMF_PCAWG.gene_ann.txt.gz", sep = "\t",
+                       header = T, stringsAsFactors = F)
+}
 
 
 if (dir.exists("/hpc/cuppen/")){
-  metadata <- read.csv(file = paste0(wd, "external-files/cancer_types_HMF_PCAWG_2-metadata_23072021.tsv"), sep = "\t", header = T, stringsAsFactors = F)
+  metadata <- read.csv(file = paste0(wd, "external-files/cancer_types_HMF_PCAWG_2-metadata_25082021.tsv"), sep = "\t", header = T, stringsAsFactors = F)
 } else {
-  metadata <- read.csv(file = paste0(wd, "external-files/cancer_types_HMF_PCAWG_2-metadata_23072021.tsv"), sep = "\t", header = T, stringsAsFactors = F)
+  metadata <- read.csv(file = paste0(wd, "external-files/cancer_types_HMF_PCAWG_2-metadata_25082021.tsv"), sep = "\t", header = T, stringsAsFactors = F)
 }
 
 metadata_included <- metadata[!(metadata$is_blacklisted),]
@@ -232,6 +250,88 @@ metadata_included$tmb <- rowSums(metadata_included[,22:23])
 
 
 
+### VCF annotated with MS and clonality information:
+#args[1]:args[2]
+# for (i in args[1]:args[2]){
+#   print(i)
+#   
+# 
+#   sample_id <- manifest$sample[i]
+#   print(sample_id)
+#   
+#   if (dir.exists("/hpc/cuppen/")){
+#     path_to_vcf <- paste0(manifest[i, "dir"], manifest[i, "som_vcf"])
+#   } else {
+#     path_to_vcf <- paste0(local, manifest[i, "dir"], manifest[i, "som_vcf"])
+#   }
+#   
+#   
+#   
+#   vcf <- variantsFromVcf(vcf.file = path_to_vcf,
+#                          merge.consecutive = T,
+#                          vcf.filter = "PASS",
+#                          vcf.fields = c("CHROM", "POS", "REF", "ALT", "FILTER", "INFO"))
+#   if (nrow(vcf) > 0){
+#     selelcted_info_fields <- getInfoValues(vcf$info, keys = c("TNC", "SUBCL"))
+#     
+#     selelcted_info_fields$SUBCL <- as.numeric(selelcted_info_fields$SUBCL)
+#     
+#     merged <- cbind(vcf[,-5], selelcted_info_fields)
+#     
+#     for (j in 1:nrow(merged)){
+#       if (is.na(merged[j,"SUBCL"]) | merged[j,"SUBCL"] < 0.8){
+#         merged[j,"SUBCL"] <- "clonal"
+#       } else {
+#         merged[j,"SUBCL"] <- "subclonal"
+#       }
+#     }
+#     
+#     
+#     if (dir.exists("/hpc/cuppen/")){
+#       mut_signature_path <- paste0("/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
+#     } else {
+#       mut_signature_path <- paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
+#     }
+#     
+#     mut_sig <- tryCatch(read.csv(file = mut_signature_path, header = T, sep = "\t", stringsAsFactors = F), error=function(e) NULL)
+#     shared_df <- dplyr::intersect(merged[,1:4], mut_sig[,1:4])
+#     # print(str(merged))
+#     # print(str(mut_sig))
+#     # print(str(shared_df))
+#     
+#     combined_df <- merge(merge(shared_df, mut_sig, by = c("chrom", "pos", "ref", "alt")), merged[,c(1:4,6)], by = c("chrom", "pos", "ref", "alt"))
+#     print(nrow(combined_df))
+#     # print(nrow(combined_df))
+#     write.table(combined_df, file = gzfile(paste0(wd, "clonality-ms-combined/", sample_id, ".txt.gz")), quote = F, row.names = F, sep = "\t")
+#   } else {
+#     write.table(NULL, file = gzfile(paste0(wd, "clonality-ms-combined/", sample_id, ".txt.gz")), quote = F, row.names = F, sep = "\t")
+#   }
+# }
+
+
+
+
+
+
+
+
+
+
+
+
+
+# i <- 1
+# sample_id <- manifest$sample[i]
+# combined_df <- read.csv(file = paste0(wd, "clonality-ms-combined/", sample_id, ".txt.gz"), stringsAsFactors = F, header = T, sep = "\t")
+
+# nrow(combined_df)
+
+
+
+
+
+
+
 ### WGD molecular timing information
 
 # wgd_timing_df <- data.frame(sample_id = character(), isWGD = logical(), molecular_timing = numeric(), cohort = character(), is_metastatic = logical())
@@ -377,3 +477,59 @@ wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_
 # global_timing_info <- merge(global_timing_info, metadata_included[,c(3,6,8,9,14,18,19,20,21,22,23,24)], by = "sample_id")
 # 
 # write.table(global_timing_info, file = gzfile(paste0(wd, "r-objects/global-timing-with-metadata.txt.gz")), quote = F, row.names = F, sep = "\t")
+
+
+
+
+
+### I wanted to verify the integrity of purple clonality info. It turned out to be wrong and I informed Sascha. Later I might be interested in annotating 
+### variants with their purple clonality info as well.
+
+# if (dir.exists("/hpc/cuppen/")){
+#   
+#   base_dir <- "/hpc/cuppen/projects/P0013_WGS_patterns_Diagn/"
+#   devtools::load_all(paste0(base_dir,'/CHORD/processed/scripts_main/mutSigExtractor/'))
+#   
+# } else {
+#   
+#   library(mutSigExtractor)
+# }
+# 
+# 
+# if (dir.exists("/hpc/cuppen/")){
+#   manifest <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/external-files/manifest_HMF_PCAWG.gene_ann.txt.gz", sep = "\t",
+#                        header = T, stringsAsFactors = F)
+# } else {
+#   manifest <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/external-files/manifest_HMF_PCAWG.gene_ann.txt.gz", sep = "\t",
+#                        header = T, stringsAsFactors = F)
+# }
+# head(manifest)
+# manifest[manifest$sample == "DO217817",]
+# 
+# sample_id <- manifest$sample[1]
+# file_path <- paste0(wd, "timing-ms-combined/", sample_id, ".txt.gz")
+# 
+# if (file.exists(file_path)){
+#   combined_df <- read.csv(file = file_path, header = T, sep = "\t", stringsAsFactors = F)
+# }
+# manifest[6000,]
+# somVcf <- paste0(local, manifest[1, "dir"], manifest[1, "som_vcf"])
+# 
+# 
+# 
+# vcf <- variantsFromVcf(vcf.file = somVcf,
+#                        merge.consecutive = T,
+#                        vcf.filter = "PASS",
+#                        vcf.fields = c("CHROM", "POS", "REF", "ALT", "FILTER", "INFO"))
+# selelcted_info_fields <- getInfoValues(vcf$info, keys = c("TNC", "SUBCL"))
+# str(selelcted_info_fields)
+# selelcted_info_fields$SUBCL <- as.numeric(selelcted_info_fields$SUBCL)
+# nrow(selelcted_info_fields[!is.na(selelcted_info_fields$SUBCL) & selelcted_info_fields$SUBCL > 0.8,])
+# table(selelcted_info_fields$SUBCL, useNA = "always")
+# nrow(selelcted_info_fields)
+# nrow(vcf)
+# 
+# metadata_included[metadata_included$sample_id == manifest$sample[1],]
+# global_timing_info_com[global_timing_info_com$sample_id == manifest$sample[1],]
+
+
