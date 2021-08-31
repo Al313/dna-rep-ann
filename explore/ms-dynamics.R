@@ -44,7 +44,6 @@ metadata_included <- metadata[!(metadata$is_blacklisted),]
 metadata_included$tmb <- rowSums(metadata_included[,22:23])
 
 
-
 # if (dir.exists("/hpc/cuppen/")){
 #   sig_cont <- readRDS("/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/contribs.fit_lsq.raw_merged.rds")
 # } else {
@@ -426,6 +425,9 @@ for (i in 1:2) {
 
 ## 
 global_timing_info_com$clonal_to_subclonal_metadata <- log2(global_timing_info_com$clonal_tmb/global_timing_info_com$subclonal_tmb)
+global_timing_info_com[,6] <- global_timing_info_com[,6] - global_timing_info_com[,4]
+global_timing_info_com[,7] <- global_timing_info_com[,7] + global_timing_info_com[,4]
+
 
 
 cancer_types <- unique(global_timing_info_com$cancer_type)
@@ -598,12 +600,12 @@ com_plot <- ggarrange(plloott_mean, plloott_median, plloott_box, ncol=3, common.
 
 for (i in 1:2) {
   if (i == 1) {
-    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig4-clonality-prim-vs-metas-per-cancer-mutationTimerR.png", height = 920, width = 1380)
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig4-clonality-prim-vs-metas-per-cancer-mutationTimerR-2.png", height = 920, width = 1380)
     print(com_plot)
     dev.off()
   }
   if (i == 2) {
-    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig4-clonality-prim-vs-metas-per-cancer-mutationTimerR.pdf", height = 14, width = 21)
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig4-clonality-prim-vs-metas-per-cancer-mutationTimerR-2.pdf", height = 14, width = 21)
     print(com_plot)
     dev.off()
   }
@@ -1527,3 +1529,231 @@ for (i in 1:2) {
     dev.off()
   }
 }
+
+
+
+# Fraction of genome altered
+
+purple_purity_df <- read.csv(file = paste0(wd, "r-objects/purple-purity-fraction-changed.txt.gz"), header = T, stringsAsFactors = F, sep = "\t")
+
+
+metadata_included <- merge(metadata_included, purple_purity_df, by = "sample_id")
+
+
+
+
+
+metadata_included_cp <- metadata_included
+cancer_types <- unique(metadata_included$cancer_type)
+
+for (cancer_type in cancer_types){
+  tmp_df <- metadata_included[metadata_included$cancer_type == cancer_type,]
+  if (nrow(tmp_df[tmp_df$is_metastatic,]) >= 5 & nrow(tmp_df[!(tmp_df$is_metastatic),]) >= 5){
+    
+  } else {
+    metadata_included_cp <- metadata_included_cp[metadata_included_cp$cancer_type != cancer_type,]
+  }
+}
+
+
+
+metadata_included_cp$cancer_type <- paste0(metadata_included_cp$cancer_type, " (", metadata_included_cp$cancer_type_code , ")")
+
+
+
+
+cancer_types <- unique(metadata_included_cp$cancer_type)
+nr_row <- length(cancer_types)
+
+
+ll <- data.frame(cancer_type = character(nr_row), cancer_type_abb = character(nr_row), cancer_type_abb_text = character(nr_row), mean_diploid_prim = numeric(nr_row), mean_diploid_metas = numeric(nr_row))
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included_cp$cancer_type_code[metadata_included_cp$cancer_type == cancer_type])
+  tmp_df <- metadata_included_cp[metadata_included_cp$cancer_type == cancer_type,]
+  ll[i,1:3] <- c(cancer_type, cancer_type_abb, cancer_type_abb)
+  
+  res <- wilcox.test(tmp_df$diploidProportion[!(tmp_df$is_metastatic)], tmp_df$diploidProportion[tmp_df$is_metastatic])
+  if (res$p.value > 0.05){
+    ll[i,3] <- NA
+  }
+  ll[i,4:5] <- c(mean((1 - tmp_df$diploidProportion[!(tmp_df$is_metastatic)]), na.rm = T), mean((1- tmp_df$diploidProportion[tmp_df$is_metastatic]), na.rm = T))
+}
+
+# ll$cancer_type <- paste0(ll$cancer_type, " (", ll$cancer_type_abb, ")")
+ll$cancer_type <- factor(ll$cancer_type)
+ll$cancer_type_abb <- factor(ll$cancer_type_abb)
+
+plot_mean <- ll %>% ggplot(aes(x = 100*mean_diploid_prim, y = 100*mean_diploid_metas, color = cancer_type)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb_text), max.overlaps = 20) +
+  xlim(c(0,100)) +
+  xlab("mean of Fraction of Genome Altered (%) _ Primary Cohort") +
+  ylim(c(0,100)) +
+  ylab("mean of Fraction of Genome Altered (%) _ Metastatic Cohort") +
+  ggtitle("Altered Fraction mean") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw()
+
+
+
+# creating the boxplot
+
+
+for (cancer_type in cancer_types){
+  tmp_df <- wgd_timing_df[wgd_timing_df$cancer_type == cancer_type & !(wgd_timing_df$is_hypermutated),]
+  if (nrow(tmp_df[tmp_df$whole_genome_duplication,]) >= 5 & nrow(tmp_df[!tmp_df$whole_genome_duplication,]) >= 5){
+    
+  } else {
+    wgd_timing_df_cp <- wgd_timing_df_cp[wgd_timing_df_cp$cancer_type != cancer_type,]
+  }
+}
+
+wgd_timing_df_cp$cancer_type <- factor(wgd_timing_df_cp$cancer_type)
+
+
+wgd_tmb_box_plot <- metadata_included_cp %>% ggplot(aes(x = is_metastatic, y = 100 * (1-diploidProportion), color = is_metastatic)) + facet_wrap(~ cancer_type_code) +
+  geom_boxplot() +
+  xlab("Cohort") +
+  stat_compare_means(comparisons = list(c('FALSE', 'TRUE')), method = "wilcox.test", label = "p.signif") +
+  ylab("Fraction Genome Altered (%)") +
+  ylim(c(0, 120))
+# ggtitle("Distribution of clonality percentage per cancer type (mutationTimerR)") 
+
+
+
+
+com_plot <- ggarrange(plot_mean, plot_median, wgd_tmb_box_plot, ncol=3, common.legend = TRUE, legend="bottom")
+
+com_plot <- annotate_figure(
+  com_plot,
+  bottom = "Hypermutated samples are excluded!")
+
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig9-fraction-pf-genome-altered.png", height = 690, width = 1265)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig9-fraction-pf-genome-altered.pdf", height = 10.5, width = 19.25)
+    print(com_plot)
+    dev.off()
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+metadata_included_cpp <- metadata_included
+cancer_types <- unique(metadata_included$cancer_type)
+
+for (cancer_type in cancer_types){
+  tmp_df <- metadata_included[metadata_included$cancer_type == cancer_type,]
+  if (nrow(tmp_df[tmp_df$is_metastatic & !(tmp_df$whole_genome_duplication),]) >= 5 & nrow(tmp_df[!(tmp_df$is_metastatic) & !(tmp_df$whole_genome_duplication),]) >= 5){
+    
+  } else {
+    metadata_included_cpp <- metadata_included_cpp[metadata_included_cpp$cancer_type != cancer_type,]
+  }
+}
+
+
+
+metadata_included_cpp$cancer_type <- paste0(metadata_included_cpp$cancer_type, " (", metadata_included_cpp$cancer_type_code , ")")
+
+
+
+
+cancer_types <- unique(metadata_included_cpp$cancer_type)
+nr_row <- length(cancer_types)
+
+
+ll <- data.frame(cancer_type = character(nr_row), cancer_type_abb = character(nr_row), cancer_type_abb_text = character(nr_row), median_diploid_prim = numeric(nr_row), median_diploid_metas = numeric(nr_row))
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included_cpp$cancer_type_code[metadata_included_cpp$cancer_type == cancer_type])
+  tmp_df <- metadata_included_cpp[metadata_included_cpp$cancer_type == cancer_type & !(metadata_included_cpp$whole_genome_duplication),]
+  ll[i,1:3] <- c(cancer_type, cancer_type_abb, cancer_type_abb)
+  
+  res <- wilcox.test(tmp_df$diploidProportion[!(tmp_df$is_metastatic)], tmp_df$diploidProportion[tmp_df$is_metastatic])
+  if (res$p.value > 0.05){
+    ll[i,3] <- NA
+  }
+  ll[i,4:5] <- c(median((1 - tmp_df$diploidProportion[!(tmp_df$is_metastatic)]), na.rm = T), median((1- tmp_df$diploidProportion[tmp_df$is_metastatic]), na.rm = T))
+}
+
+# ll$cancer_type <- paste0(ll$cancer_type, " (", ll$cancer_type_abb, ")")
+ll$cancer_type <- factor(ll$cancer_type)
+ll$cancer_type_abb <- factor(ll$cancer_type_abb)
+
+plott_median <- ll %>% ggplot(aes(x = 100*median_diploid_prim, y = 100*median_diploid_metas, color = cancer_type)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb_text), max.overlaps = 20) +
+  xlim(c(0,60)) +
+  xlab("median of Fraction of Genome Altered (%) _ Primary Cohort") +
+  ylim(c(0,60)) +
+  ylab("median of Fraction of Genome Altered (%) _ Metastatic Cohort") +
+  ggtitle("Altered Fraction median") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw()
+
+
+
+# creating the boxplott
+
+
+
+wgd_tmb_box_plott <- metadata_included_cpp[!(metadata_included_cpp$whole_genome_duplication),] %>% ggplot(aes(x = is_metastatic, y = 100 * (1-diploidProportion), color = is_metastatic)) + facet_wrap(~ cancer_type_code) +
+  geom_boxplot() +
+  xlab("Cohort") +
+  stat_compare_means(comparisons = list(c('FALSE', 'TRUE')), method = "wilcox.test", label = "p.signif") +
+  ylab("Fraction Genome Altered (%)") +
+  ylim(c(0, 120))
+# ggtitle("Distribution of clonality percentage per cancer type (mutationTimerR)") 
+
+
+
+
+com_plott <- ggarrange(plott_mean, plott_median, wgd_tmb_box_plott, ncol=3, common.legend = TRUE, legend="bottom")
+
+com_plott <- annotate_figure(
+  com_plott,
+  bottom = "WGD samples are excluded!")
+
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig9-1-fraction-pf-genome-altered-without-wgd.png", height = 690, width = 1265)
+    print(com_plott)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig9-1-fraction-pf-genome-altered-without-wgd.pdf", height = 10.5, width = 19.25)
+    print(com_plott)
+    dev.off()
+  }
+}
+
+
+
+
+

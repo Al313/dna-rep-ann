@@ -533,3 +533,50 @@ wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_
 # global_timing_info_com[global_timing_info_com$sample_id == manifest$sample[1],]
 
 
+
+
+
+
+
+
+
+# Getting the fraction of genome altered
+
+
+
+# purple_purity_df <- data.frame(sample_id = character(7049), diploidProportion = numeric(7049))
+# 
+# 
+# for (i in 1:nrow(manifest)){
+#   print(i)
+# 
+# 
+#   sample_id <- manifest$sample[i]
+#   print(sample_id)
+#   purple_purity_df[i,1] <- sample_id
+# 
+#   if (dir.exists("/hpc/cuppen/")){
+#     path_to_purity <- paste0(manifest[i, "dir"], paste0(str_split(manifest[i, "som_vcf"], pattern = "[.]")[[1]][1], ".purple.purity.tsv"))
+#   } else {
+#     path_to_purity <- paste0(local, manifest[i, "dir"], paste0(str_split(manifest[i, "som_vcf"], pattern = "[.]")[[1]][1], ".purple.purity.tsv"))
+#   }
+#   
+#   if (file.exists(path_to_purity)){
+#     purple_purity <- read.csv(file = path_to_purity, header = T, stringsAsFactors = F, sep = "\t")
+#     if (nrow(purple_purity) == 1){
+#       purple_purity_df[i,2] <- purple_purity$diploidProportion
+#     } else {
+#       purple_purity_df[i,2] <- NA
+#     } 
+#   } else {
+#     purple_purity_df[i,2] <- NA
+#   }
+# }
+# 
+# 
+# write.table(purple_purity_df, file = gzfile(paste0(wd, "r-objects/purple-purity-fraction-changed.txt.gz")), quote = F, row.names = F, sep = "\t")
+
+
+
+purple_purity_df <- read.csv(file = paste0(wd, "r-objects/purple-purity-fraction-changed.txt.gz"), header = T, stringsAsFactors = F, sep = "\t")
+
