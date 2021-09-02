@@ -10,6 +10,7 @@ library(ggpubr)
 library(magrittr)
 library(rcompanion)
 library(epitools)
+library(stringr)
 
 ### Setting constants and reading in data
 
@@ -1531,6 +1532,11 @@ for (i in 1:2) {
 }
 
 
+# ************************************************************************************************************************************************
+# fig 9 Fraction of genome altered
+
+
+
 
 # Fraction of genome altered
 
@@ -1753,6 +1759,94 @@ for (i in 1:2) {
   }
 }
 
+
+
+
+
+
+
+# ************************************************************************************************************************************************
+# fig 10 ms timing
+
+
+if (dir.exists("/hpc/cuppen/")){
+  cosmic_sigs <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+} else {
+  cosmic_sigs <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+}
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  ms_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  ms_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+}
+
+
+df <- data.frame(sample_id = character(7049*51), cosmic_sig = character(7049*51), fold_change = numeric(7049*51))
+
+length(cosmic_sigs$V1)
+
+
+ms_timing_df[ms_timing_df$sample_id == "CPCT02050229T",]
+
+# length(metadata_included$sample_id)
+for (i in 1:length(metadata_included$sample_id)){
+  print(i)
+  sample_id <- metadata_included$sample_id[i]
+  i <- i + (50*(i-1))
+  
+  for (j in 1:length(cosmic_sigs$V1)){
+    
+    df[i+j-1, "sample_id"] <- sample_id
+    df[i+j-1, "cosmic_sig"] <- cosmic_sigs$V1[j]
+    late_count <-  ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [late]",cosmic_sigs$V1[j]]
+    early_count <- ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [early]",cosmic_sigs$V1[j]]
+    
+    if (!is.na(late_count) & !is.na(early_count) & late_count != 0 & early_count != 0){
+      df[i+j-1, "fold_change"] <- late_count/early_count
+    } else {
+      df[i+j-1, "fold_change"] <- NA
+    }
+  }
+}
+saveRDS(df, file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/df.all.rds"))
+
+
+df <- readRDS(file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/df.all.rds"))
+
+summary(log2(df[!is.na(df$fold_change),"fold_change"]))
+
+str
+
+df$cosmic_sig <- factor(df$cosmic_sig)
+# df[df$fold_change > 50 & !is.na(df$fold_change), "fold_change"] <- 50
+
+gg_plot <- df %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change), color = cosmic_sig)) +
+  geom_boxplot() +
+  # scale_color_manual(guide = F) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  geom_hline(yintercept = -0.76, color = "red", lty = 2)
+
+
+ms_timing_df[ms_timing_df$sample_id == sample_id,]
+
+mean(ms_timing_df[ms_timing_df$timing == "clonal [late]","SBS4"], na.rm = T)
+mean(ms_timing_df[ms_timing_df$timing == "clonal [early]","SBS4"], na.rm = T)
+
+
+
+
+
+
+
+
+
+
+
+# ************************************************************************************************************************************************
+# fig 11 ms clonality purple
 
 
 

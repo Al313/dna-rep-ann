@@ -11,19 +11,19 @@
 # library(gghighlight)
 library(stringr)
 library(dplyr)
+# 
+# if (dir.exists("/hpc/cuppen/")){
+# 
+#   base_dir <- "/hpc/cuppen/projects/P0013_WGS_patterns_Diagn/"
+#   devtools::load_all(paste0(base_dir,'/CHORD/processed/scripts_main/mutSigExtractor/'))
+# 
+# } else {
+# 
+#   library(mutSigExtractor)
+# }
 
-if (dir.exists("/hpc/cuppen/")){
 
-  base_dir <- "/hpc/cuppen/projects/P0013_WGS_patterns_Diagn/"
-  devtools::load_all(paste0(base_dir,'/CHORD/processed/scripts_main/mutSigExtractor/'))
-
-} else {
-
-  library(mutSigExtractor)
-}
-
-
-args <- commandArgs(trailingOnly=T)
+# args <- commandArgs(trailingOnly=T)
 
 
 
@@ -578,5 +578,193 @@ wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_
 
 
 
-purple_purity_df <- read.csv(file = paste0(wd, "r-objects/purple-purity-fraction-changed.txt.gz"), header = T, stringsAsFactors = F, sep = "\t")
+# purple_purity_df <- read.csv(file = paste0(wd, "r-objects/purple-purity-fraction-changed.txt.gz"), header = T, stringsAsFactors = F, sep = "\t")
+
+
+
+
+
+
+
+
+
+# getting sig contributions
+
+
+# `%notin%` <- Negate(`%in%`)
+# 
+# 
+# cosmic_sigs <- vector()
+# 
+# all.cols <- c("clonal [NA]", "clonal [late]", "clonal [early]", "subclonal")
+# 
+# 
+# 
+# 
+# 
+# # nrow(metadata_included)
+# for (i in 1:nrow(metadata_included)){
+#   print(i)
+#   sample_id <- metadata_included$sample_id[i]
+#   print(sample_id)
+# 
+#   timing_ms <- tryCatch(read.csv(file = paste0(wd, "timing-ms-combined/", sample_id, ".txt.gz"), stringsAsFactors = F, header = T, sep = "\t"), error=function(e) NULL)
+# 
+#   if (!is.null(timing_ms)){
+#     mm <- as.matrix(table(timing_ms$ASSIGNED_SIG, timing_ms$timing_class))
+# 
+#     m2 <- matrix(nrow = nrow(mm), ncol = length(all.cols), dimnames = list(NULL, all.cols))
+#     m2[ , colnames(mm)] <- mm
+#     rownames(m2) <- rownames(mm)
+# 
+#     mm <- m2
+# 
+#     cos_similarity_check <- as.numeric(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 4)) >= 85
+# 
+# 
+#     mm <- as.data.frame(mm)
+#     mm <- mm[cos_similarity_check,]
+# 
+#     duplicated_check <- duplicated(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2))
+# 
+# 
+#     duplicates <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)[duplicated_check]
+# 
+#     if (length(duplicates) > 0) {
+#       for (j in 1:length(duplicates)){
+#         duplicate_indeces <- which(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2) == duplicates[j])
+#         mm <- rbind(mm, colSums(mm[duplicate_indeces,]))
+#         rownames(mm)[nrow(mm)] <- paste0(".", duplicates[j])
+#         mm <- mm[-duplicate_indeces,]
+#       }
+#     }
+# 
+# 
+#     rownames(mm) <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)
+# 
+# 
+#     add_to_cosmic <- rownames(mm)[rownames(mm) %notin% cosmic_sigs]
+#     cosmic_sigs <- append(cosmic_sigs, add_to_cosmic)
+#   }
+# }
+# 
+# if (dir.exists("/hpc/cuppen/")){
+#   write(cosmic_sigs, file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t")
+# } else {
+#   write(cosmic_sigs, file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t")
+# }
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  cosmic_sigs <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+} else {
+  cosmic_sigs <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+}
+
+
+# `%notin%` <- Negate(`%in%`)
+# 
+# 
+# all.cols <- c("clonal [NA]", "clonal [late]", "clonal [early]", "subclonal")
+# 
+# col.name <- cosmic_sigs$V1
+# 
+# mt <- matrix(nrow = 4*nrow(metadata_included), ncol = (3 + length(col.name)))
+# rownames(mt) <- as.character(1:(4*nrow(metadata_included)))
+# colnames(mt) <- c("sample_id", "timing", "info_exists", col.name)
+# 
+# 
+# 
+# 
+# 
+# 
+# first <- T
+# 
+# # nrow(metadata_included)
+# for (i in 1:nrow(metadata_included)){
+#   print(i)
+#   sample_id <- metadata_included$sample_id[i]
+#   print(sample_id)
+# 
+#   timing_ms <- tryCatch(read.csv(file = paste0(wd, "timing-ms-combined/", sample_id, ".txt.gz"), stringsAsFactors = F, header = T, sep = "\t"), error=function(e) NULL)
+# 
+#   if (!is.null(timing_ms)){
+#     mm <- as.matrix(table(timing_ms$ASSIGNED_SIG, timing_ms$timing_class))
+# 
+#     m2 <- matrix(nrow = nrow(mm), ncol = length(all.cols), dimnames = list(NULL, all.cols))
+#     m2[ , colnames(mm)] <- mm
+#     rownames(m2) <- rownames(mm)
+# 
+#     mm <- m2
+# 
+#     cos_similarity_check <- as.numeric(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 4)) >= 85
+# 
+# 
+#     mm <- as.data.frame(mm)
+#     mm <- mm[cos_similarity_check,]
+# 
+#     duplicated_check <- duplicated(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2))
+# 
+# 
+#     duplicates <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)[duplicated_check]
+# 
+#     if (length(duplicates) > 0) {
+#       for (j in 1:length(duplicates)){
+#         duplicate_indeces <- which(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2) == duplicates[j])
+#         mm <- rbind(mm, colSums(mm[duplicate_indeces,]))
+#         rownames(mm)[nrow(mm)] <- paste0(".", duplicates[j])
+#         mm <- mm[-duplicate_indeces,]
+#       }
+#     }
+# 
+# 
+#     rownames(mm) <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)
+# 
+# 
+#     mm <- t(mm)
+# 
+#     if (!first){
+#       i <- i + (3*(i-1))
+#     }
+# 
+#     first <- F
+#     mt[i:(i+3),"sample_id"] <- sample_id
+#     mt[i:(i+3),"timing"] <- rownames(mm)
+#     mt[i:(i+3),"info_exists"] <- T
+# 
+#     mt[i:(i+3),colnames(mm)] <- mm
+# 
+#   } else {
+#     if (!first){
+#       i <- i + (3*(i-1))
+#     }
+#     first <- F
+#     mt[i:(i+3),"sample_id"] <- sample_id
+#     mt[i:(i+3),"timing"] <- rownames(mm)
+#     mt[i:(i+3),"info_exists"] <- F
+#   }
+# }
+# 
+# mt <- as.data.frame(mt)
+# mt$info_exists <- as.logical(mt$info_exists)
+# mt[,4:ncol(mt)] <- sapply(mt[,4:ncol(mt)], as.numeric)
+# 
+# 
+# if (dir.exists("/hpc/cuppen/")){
+#   write.table(mt, file = gzfile("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz"), sep = "\t", quote = F, row.names = F)
+# } else {
+#   write.table(mt, file = gzfile("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz"), sep = "\t", quote = F, row.names = F)
+# }
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  ms_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  ms_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+}
+
+
+
 
