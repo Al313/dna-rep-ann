@@ -1,3 +1,4 @@
+
 ### Purpose
 
 # In this script I investigate the dynamics of mutational processes using mutational signature and mutational timing information.
@@ -11,6 +12,12 @@ library(magrittr)
 library(rcompanion)
 library(epitools)
 library(stringr)
+library(tidyr)
+
+
+
+
+
 
 ### Setting constants and reading in data
 
@@ -1784,56 +1791,198 @@ if (dir.exists("/hpc/cuppen/")){
 }
 
 
-df <- data.frame(sample_id = character(7049*51), cosmic_sig = character(7049*51), fold_change = numeric(7049*51))
-
-length(cosmic_sigs$V1)
-
-
-ms_timing_df[ms_timing_df$sample_id == "CPCT02050229T",]
-
-# length(metadata_included$sample_id)
-for (i in 1:length(metadata_included$sample_id)){
-  print(i)
-  sample_id <- metadata_included$sample_id[i]
-  i <- i + (50*(i-1))
-  
-  for (j in 1:length(cosmic_sigs$V1)){
-    
-    df[i+j-1, "sample_id"] <- sample_id
-    df[i+j-1, "cosmic_sig"] <- cosmic_sigs$V1[j]
-    late_count <-  ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [late]",cosmic_sigs$V1[j]]
-    early_count <- ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [early]",cosmic_sigs$V1[j]]
-    
-    if (!is.na(late_count) & !is.na(early_count) & late_count != 0 & early_count != 0){
-      df[i+j-1, "fold_change"] <- late_count/early_count
-    } else {
-      df[i+j-1, "fold_change"] <- NA
-    }
-  }
-}
-saveRDS(df, file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/df.all.rds"))
+# df <- data.frame(sample_id = character(7049*51), cosmic_sig = character(7049*51), fold_change = numeric(7049*51))
+# 
+# 
+# # length(metadata_included$sample_id)
+# for (i in 1:length(metadata_included$sample_id)){
+#   print(i)
+#   sample_id <- metadata_included$sample_id[i]
+#   i <- i + (50*(i-1))
+#   
+#   for (j in 1:length(cosmic_sigs$V1)){
+#     
+#     df[i+j-1, "sample_id"] <- sample_id
+#     df[i+j-1, "cosmic_sig"] <- cosmic_sigs$V1[j]
+#     late_count <-  ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [late]",cosmic_sigs$V1[j]]
+#     early_count <- ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [early]",cosmic_sigs$V1[j]]
+#     
+#     if (!is.na(late_count) & !is.na(early_count) & late_count != 0 & early_count != 0){
+#       df[i+j-1, "fold_change"] <- late_count/early_count
+#     } else {
+#       df[i+j-1, "fold_change"] <- NA
+#     }
+#   }
+# }
+# saveRDS(df, file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/df.all.rds"))
 
 
 df <- readRDS(file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/df.all.rds"))
 
+
+id8_sig <- df$sample_id[df$cosmic_sig == "ID18" & !is.na(df$fold_change)]
+
+table(metadata_included$cancer_type[metadata_included$sample_id %in% id8_sig])
+
+
+sbs88_sig <- df$sample_id[df$cosmic_sig == "SBS88" & !is.na(df$fold_change)]
+
+table(metadata_included$cancer_type[metadata_included$sample_id %in% sbs88_sig])
+
+
 summary(log2(df[!is.na(df$fold_change),"fold_change"]))
 
-str
 
 df$cosmic_sig <- factor(df$cosmic_sig)
 # df[df$fold_change > 50 & !is.na(df$fold_change), "fold_change"] <- 50
 
-gg_plot <- df %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change), color = cosmic_sig)) +
+gg_plot <- df %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change))) +
   geom_boxplot() +
+  geom_text(x = 40, y = -10, label = "Median of medians = -0.75", color = "red") +
+  geom_text(x= 5, y = 7.5, label = "Late clonal", face = "bold") +
+  geom_text(x= 5, y = -10, label = "Early clonal", face = "bold") +
   # scale_color_manual(guide = F) +
   theme(axis.text.x = element_text(angle = 90)) +
-  geom_hline(yintercept = -0.76, color = "red", lty = 2)
+  geom_hline(yintercept = -0.7469, color = "red", lty = 2) +
+  xlab("Cosmic Signature") +
+  ylab("Fold Change (Log2)")
 
 
-ms_timing_df[ms_timing_df$sample_id == sample_id,]
 
-mean(ms_timing_df[ms_timing_df$timing == "clonal [late]","SBS4"], na.rm = T)
-mean(ms_timing_df[ms_timing_df$timing == "clonal [early]","SBS4"], na.rm = T)
+
+# Normalized
+
+1/0.59589
+
+
+df2 <- df
+
+df2$fold_change[!is.na(df2$fold_change)] <- df2$fold_change[!is.na(df2$fold_change)] * 1.67862
+
+
+
+gg_plot2 <- df2 %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change))) +
+  geom_boxplot() +
+  geom_text(x= 5, y = 7.5, label = "Late clonal", face = "bold") +
+  geom_text(x= 5, y = -10, label = "Early clonal", face = "bold") +
+  # scale_color_manual(guide = F) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  geom_hline(yintercept = 0, color = "red", lty = 2) +
+  xlab("Cosmic Signature") +
+  ylab("Normalized Fold Change (Log2)")
+
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig10-ms-timing.png", height = 480, width = 960)
+    print(gg_plot)
+    dev.off()
+    
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig10-ms-timing-normalized.png", height = 480, width = 960)
+    print(gg_plot2)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig10-ms-timing.pdf", height = 7, width = 14)
+    print(gg_plot)
+    dev.off()
+    
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig10-ms-timing-normalized.pdf", height = 7, width = 14)
+    print(gg_plot2)
+    dev.off()
+  }
+}
+
+
+
+### between metastatic and primary
+
+
+
+df <- merge(df, metadata_included[,c("sample_id", "is_metastatic")], by = "sample_id")
+
+head(df)
+
+
+summary(log2(df[!is.na(df$fold_change),"fold_change"]))
+
+
+# This is a temporary solution to remove the sigs that don't have eough number of data points for primary and metastatic. Later come up with a solution to remove signatures that have fewer than 5 data points for each cohort
+dff <- df
+dff <- dff[dff$cosmic_sig %notin% c("DBS8", "SBS15", "SBS20"),]
+
+gg_plott <- dff %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change), fill = is_metastatic)) +
+  geom_boxplot() +
+  geom_text(x = 40, y = -10, label = "Median of medians = -0.75", color = "red") +
+  geom_text(x= 5, y = 7.5, label = "Late clonal", face = "bold") +
+  geom_text(x= 5, y = -10, label = "Early clonal", face = "bold") +
+  # scale_color_manual(guide = F) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  geom_hline(yintercept = -0.7469, color = "red", lty = 2) +
+  xlab("Cosmic Signature") +
+  ylab("Fold Change (Log2)")
+
+
+
+
+# Normalized
+
+dff2 <- df
+
+dff2$fold_change[!is.na(dff2$fold_change)] <- dff2$fold_change[!is.na(dff2$fold_change)] * 1.67862
+
+dff2 <- dff2[dff2$cosmic_sig %notin% c("DBS8", "SBS15", "SBS20"),]
+
+
+gg_plott2 <- dff2 %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change), fill = is_metastatic)) +
+  geom_boxplot() +
+  geom_text(x= 5, y = 7.5, label = "Late clonal", face = "bold") +
+  geom_text(x= 5, y = -10, label = "Early clonal", face = "bold") +
+  # scale_color_manual(guide = F) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  geom_hline(yintercept = 0, color = "red", lty = 2) +
+  xlab("Cosmic Signature") +
+  ylab("Normalized Fold Change (Log2)")
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig10-ms-timing-per-cohort.png", height = 480, width = 960)
+    print(gg_plott)
+    dev.off()
+    
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig10-ms-timing-per-cohort-normalized.png", height = 480, width = 960)
+    print(gg_plott2)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig10-ms-timing-per-cohort.pdf", height = 7, width = 14)
+    print(gg_plott)
+    dev.off()
+    
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig10-ms-timing-per-cohort-normalized.pdf", height = 7, width = 14)
+    print(gg_plott2)
+    dev.off()
+  }
+}
+
+
+
+# ************************************************************************************************************************************************
+# fig 11 ms clonality purple
+
+
+
+
+
+
+
+
 
 
 
@@ -1846,8 +1995,429 @@ mean(ms_timing_df[ms_timing_df$timing == "clonal [early]","SBS4"], na.rm = T)
 
 
 # ************************************************************************************************************************************************
-# fig 11 ms clonality purple
+# fig 12 reproducing fig 2a of Gerstung et al.
+
+library(tidyr)
+
+global_timing_info_com_na_rm <- global_timing_info_com[!is.na(global_timing_info_com$subclonal),]
+
+global_timing_info_com_subcl_0_rm <- global_timing_info_com_na_rm[global_timing_info_com_na_rm$subclonal != 0,]
+
+suff_num_tiss <- names(table(global_timing_info_com_subcl_0_rm$tissue_type)[as.vector(table(global_timing_info_com_subcl_0_rm$tissue_type)) >= 10])
+
+global_timing_info_com_subcl_0_rm <- global_timing_info_com_subcl_0_rm[global_timing_info_com_subcl_0_rm$tissue_type %in% suff_num_tiss,]
+
+
+
+global_timing_info_com_subcl_0_rm[,c(3,4,5,6,7)] <- global_timing_info_com_subcl_0_rm[,c(3,4,5,6,7)]/rowSums(global_timing_info_com_subcl_0_rm[,c(3,4,5,7)])
+
+
+all_order_sample <- vector()
+global_timing_info_com_subcl_0_rm$early_plus_late <- rowSums(global_timing_info_com_subcl_0_rm[,c(3,4)])
+
+for (tissue in unique(global_timing_info_com_subcl_0_rm$tissue_type)){
+  tmp_df <- global_timing_info_com_subcl_0_rm[global_timing_info_com_subcl_0_rm$tissue_type == tissue,]
+  tissue_order <- tmp_df[order(tmp_df$early_plus_late),"sample_id"]
+  
+  
+  all_order_sample <- append(all_order_sample, tissue_order)
+}
+
+
+global_timing_info_com_subcl_0_rm$sample_id <- factor(global_timing_info_com_subcl_0_rm$sample_id, levels = all_order_sample)
 
 
 
 
+
+
+global_timing_info_com_subcl_0_rm_tibble <-  gather(data = global_timing_info_com_subcl_0_rm, key = "clonality_category", value = "clonality_value", early_clonal, late_clonal, na_clonal, subclonal)
+
+
+global_timing_info_com_subcl_0_rm_tibble$clonality_value <- 100*global_timing_info_com_subcl_0_rm_tibble$clonality_value
+global_timing_info_com_subcl_0_rm_tibble$clonality_category <- factor(global_timing_info_com_subcl_0_rm_tibble$clonality_category)
+global_timing_info_com_subcl_0_rm_tibble$clonality_category <- factor(global_timing_info_com_subcl_0_rm_tibble$clonality_category, levels = rev(levels(global_timing_info_com_subcl_0_rm_tibble$clonality_category)))
+global_timing_info_com_subcl_0_rm_tibble$tissue_type <- factor(global_timing_info_com_subcl_0_rm_tibble$tissue_type)
+
+global_timing_info_com_subcl_0_rm_tibble
+
+
+plot_stacked_bar_plot <- global_timing_info_com_subcl_0_rm_tibble %>% ggplot(aes(x = sample_id, y = clonality_value, fill = clonality_category)) + facet_wrap(~ tissue_type, scale = "free_x") +
+  geom_bar(position="fill", stat="identity", aes(color=clonality_category)) +
+  scale_color_manual(values = c("yellow", "grey", "blue", "red")) +
+  scale_fill_manual(values = c("yellow", "grey", "blue", "red")) +
+  theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank())
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig12-timing-stacked-bar-plot.png", height = 960, width = 1360)
+    print(plot_stacked_bar_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig12-timing-stacked-bar-plot.pdf", height = 14, width = 21)
+    print(plot_stacked_bar_plot)
+    dev.off()
+  }
+}
+
+
+
+
+### Primary cohort
+
+
+
+
+
+global_timing_info_com_na_rm <- global_timing_info_com[!is.na(global_timing_info_com$subclonal),]
+
+global_timing_info_com_subcl_0_rm <- global_timing_info_com_na_rm[global_timing_info_com_na_rm$subclonal != 0,]
+
+suff_num_tiss_prim <- names(table(global_timing_info_com_subcl_0_rm$tissue_type[!(global_timing_info_com_subcl_0_rm$is_metastatic)])[as.vector(table(global_timing_info_com_subcl_0_rm$tissue_type[!(global_timing_info_com_subcl_0_rm$is_metastatic)])) >= 10])
+suff_num_tiss_metas <- names(table(global_timing_info_com_subcl_0_rm$tissue_type[global_timing_info_com_subcl_0_rm$is_metastatic])[as.vector(table(global_timing_info_com_subcl_0_rm$tissue_type[global_timing_info_com_subcl_0_rm$is_metastatic])) >= 10])
+
+suff_num_tiss_shared <- intersect(suff_num_tiss_metas, suff_num_tiss_prim)
+
+global_timing_info_com_subcl_0_rm <- global_timing_info_com_subcl_0_rm[global_timing_info_com_subcl_0_rm$tissue_type %in% suff_num_tiss_shared,]
+
+
+
+global_timing_info_com_subcl_0_rm[,c(3,4,5,6,7)] <- global_timing_info_com_subcl_0_rm[,c(3,4,5,6,7)]/rowSums(global_timing_info_com_subcl_0_rm[,c(3,4,5,7)])
+
+global_timing_info_com_subcl_0_rm_prim <- global_timing_info_com_subcl_0_rm[!(global_timing_info_com_subcl_0_rm$is_metastatic),]
+
+
+all_order_sample <- vector()
+global_timing_info_com_subcl_0_rm_prim$early_plus_late <- rowSums(global_timing_info_com_subcl_0_rm_prim[,c(3,4)])
+
+
+for (tissue in unique(global_timing_info_com_subcl_0_rm_prim$tissue_type)){
+  tmp_df <- global_timing_info_com_subcl_0_rm_prim[global_timing_info_com_subcl_0_rm_prim$tissue_type == tissue,]
+  tissue_order <- tmp_df[order(tmp_df$early_plus_late),"sample_id"]
+  
+  
+  all_order_sample <- append(all_order_sample, tissue_order)
+}
+
+
+global_timing_info_com_subcl_0_rm_prim$sample_id <- factor(global_timing_info_com_subcl_0_rm_prim$sample_id, levels = all_order_sample)
+
+
+
+
+
+
+global_timing_info_com_subcl_0_rm_prim_tibble <-  gather(data = global_timing_info_com_subcl_0_rm_prim, key = "clonality_category", value = "clonality_value", early_clonal, late_clonal, na_clonal, subclonal)
+
+
+global_timing_info_com_subcl_0_rm_prim_tibble$clonality_value <- 100*global_timing_info_com_subcl_0_rm_prim_tibble$clonality_value
+global_timing_info_com_subcl_0_rm_prim_tibble$clonality_category <- factor(global_timing_info_com_subcl_0_rm_prim_tibble$clonality_category)
+global_timing_info_com_subcl_0_rm_prim_tibble$clonality_category <- factor(global_timing_info_com_subcl_0_rm_prim_tibble$clonality_category, levels = rev(levels(global_timing_info_com_subcl_0_rm_prim_tibble$clonality_category)))
+global_timing_info_com_subcl_0_rm_prim_tibble$tissue_type <- factor(global_timing_info_com_subcl_0_rm_prim_tibble$tissue_type)
+
+global_timing_info_com_subcl_0_rm_prim_tibble
+
+
+plot_stacked_bar_plot_prim <- global_timing_info_com_subcl_0_rm_prim_tibble %>% ggplot(aes(x = sample_id, y = clonality_value, fill = clonality_category)) + facet_wrap(~ tissue_type, scale = "free_x") +
+  geom_bar(position="fill", stat="identity", aes(color=clonality_category)) +
+  scale_color_manual(values = c("yellow", "grey", "blue", "red")) +
+  scale_fill_manual(values = c("yellow", "grey", "blue", "red")) +
+  theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank()) +
+  ggtitle("Timing and CLonality for Primary Cohort")
+
+
+
+
+
+
+### Metastatic cohort
+
+
+
+global_timing_info_com_na_rm <- global_timing_info_com[!is.na(global_timing_info_com$subclonal),]
+
+global_timing_info_com_subcl_0_rm <- global_timing_info_com_na_rm[global_timing_info_com_na_rm$subclonal != 0,]
+
+suff_num_tiss_prim <- names(table(global_timing_info_com_subcl_0_rm$tissue_type[!(global_timing_info_com_subcl_0_rm$is_metastatic)])[as.vector(table(global_timing_info_com_subcl_0_rm$tissue_type[!(global_timing_info_com_subcl_0_rm$is_metastatic)])) >= 10])
+suff_num_tiss_metas <- names(table(global_timing_info_com_subcl_0_rm$tissue_type[global_timing_info_com_subcl_0_rm$is_metastatic])[as.vector(table(global_timing_info_com_subcl_0_rm$tissue_type[global_timing_info_com_subcl_0_rm$is_metastatic])) >= 10])
+
+suff_num_tiss_shared <- intersect(suff_num_tiss_metas, suff_num_tiss_prim)
+
+global_timing_info_com_subcl_0_rm <- global_timing_info_com_subcl_0_rm[global_timing_info_com_subcl_0_rm$tissue_type %in% suff_num_tiss_shared,]
+
+
+
+global_timing_info_com_subcl_0_rm[,c(3,4,5,6,7)] <- global_timing_info_com_subcl_0_rm[,c(3,4,5,6,7)]/rowSums(global_timing_info_com_subcl_0_rm[,c(3,4,5,7)])
+
+global_timing_info_com_subcl_0_rm_metas <- global_timing_info_com_subcl_0_rm[global_timing_info_com_subcl_0_rm$is_metastatic,]
+
+
+all_order_sample <- vector()
+global_timing_info_com_subcl_0_rm_metas$early_plus_late <- rowSums(global_timing_info_com_subcl_0_rm_metas[,c(3,4)])
+
+
+for (tissue in unique(global_timing_info_com_subcl_0_rm_metas$tissue_type)){
+  tmp_df <- global_timing_info_com_subcl_0_rm_metas[global_timing_info_com_subcl_0_rm_metas$tissue_type == tissue,]
+  tissue_order <- tmp_df[order(tmp_df$early_plus_late),"sample_id"]
+  
+  
+  all_order_sample <- append(all_order_sample, tissue_order)
+}
+
+
+global_timing_info_com_subcl_0_rm_metas$sample_id <- factor(global_timing_info_com_subcl_0_rm_metas$sample_id, levels = all_order_sample)
+
+
+
+
+
+
+global_timing_info_com_subcl_0_rm_metas_tibble <-  gather(data = global_timing_info_com_subcl_0_rm_metas, key = "clonality_category", value = "clonality_value", early_clonal, late_clonal, na_clonal, subclonal)
+
+
+global_timing_info_com_subcl_0_rm_metas_tibble$clonality_value <- 100*global_timing_info_com_subcl_0_rm_metas_tibble$clonality_value
+global_timing_info_com_subcl_0_rm_metas_tibble$clonality_category <- factor(global_timing_info_com_subcl_0_rm_metas_tibble$clonality_category)
+global_timing_info_com_subcl_0_rm_metas_tibble$clonality_category <- factor(global_timing_info_com_subcl_0_rm_metas_tibble$clonality_category, levels = rev(levels(global_timing_info_com_subcl_0_rm_metas_tibble$clonality_category)))
+global_timing_info_com_subcl_0_rm_metas_tibble$tissue_type <- factor(global_timing_info_com_subcl_0_rm_metas_tibble$tissue_type)
+
+global_timing_info_com_subcl_0_rm_metas_tibble
+
+
+plot_stacked_bar_plot_metas <- global_timing_info_com_subcl_0_rm_metas_tibble %>% ggplot(aes(x = sample_id, y = clonality_value, fill = clonality_category)) + facet_wrap(~ tissue_type, scale = "free_x") +
+  geom_bar(position="fill", stat="identity", aes(color=clonality_category)) +
+  scale_color_manual(values = c("yellow", "grey", "blue", "red")) +
+  scale_fill_manual(values = c("yellow", "grey", "blue", "red")) +
+  theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank()) +
+  ggtitle("Timing and CLonality for Metastatic Cohort")
+
+
+
+
+
+combined_plot <- ggarrange(plot_stacked_bar_plot_prim, plot_stacked_bar_plot_metas, ncol = 1, nrow = 2, common.legend = T, legend = "right")
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig12-1-timing-stacked-bar-plot-per-cohort.png", height = 1360, width = 960)
+    print(combined_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig12-1-timing-stacked-bar-plot-per-cohort.pdf", height = 21, width = 14)
+    print(combined_plot)
+    dev.off()
+  }
+}
+
+
+
+
+
+
+# ************************************************************************************************************************************************
+# using binned purple data
+
+if (dir.exists("/hpc/cuppen/")){
+  df_purple_clonality_binned <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned.txt", sep = "\t", stringsAsFactors = F, header = FALSE)
+} else {
+  df_purple_clonality_binned <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned.txt", sep = "\t", stringsAsFactors = F, header = FALSE)
+}
+
+colnames(df_purple_clonality_binned) <- c("sample_id", "clonal", "probably_clonal", "probably_subclonal", "subclonal")
+
+df_purple_clonality_binned <- merge(df_purple_clonality_binned, metadata_included[,c("sample_id", "is_metastatic", "cancer_type")], by = "sample_id")
+
+
+df_purple_clonality_binned$tmb <- rowSums(df_purple_clonality_binned[,2:5])
+df_purple_clonality_binned$clonal_summed <- rowSums(df_purple_clonality_binned[,2:3])
+
+# Fig13
+### Clonality from PURPLE with binned data
+
+cancer_types <- unique(metadata_included$cancer_type)
+
+
+
+ff <- data.frame(cancer_type = character(59), cancer_type_abb = character(59), mean_clona_met = numeric(59), mean_clona_prim = numeric(59))
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  tmp_df <- df_purple_clonality_binned[df_purple_clonality_binned$cancer_type == cancer_type,]
+  
+  ff[i,1:2] <- c(cancer_type, cancer_type_abb)
+  if (nrow(tmp_df[tmp_df$is_metastatic,]) >= 5 & nrow(tmp_df[!(tmp_df$is_metastatic),]) >= 5){
+    res <- wilcox.test(tmp_df$clonal[tmp_df$is_metastatic]/tmp_df$tmb[tmp_df$is_metastatic], tmp_df$clonal[!(tmp_df$is_metastatic)]/tmp_df$tmb[!(tmp_df$is_metastatic)])
+    if (res$p.value > 0.05){
+      ff[i,2] <- NA
+    }
+    ff[i,3:4] <- c(mean(tmp_df$clonal[tmp_df$is_metastatic]/tmp_df$tmb[tmp_df$is_metastatic], na.rm = T), mean(tmp_df$clonal[!(tmp_df$is_metastatic)]/tmp_df$tmb[!(tmp_df$is_metastatic)], na.rm = T))
+  } else {
+    ff[i,3:4] <- rep(NA, times = 2)
+  }
+}
+
+
+
+ff$cancer_type <- factor(ff$cancer_type)
+ff$cancer_type_abb <- factor(ff$cancer_type_abb)
+
+
+
+plloott_mean <- ff[!(is.na(ff$mean_clona_met)) & !(is.na(ff$mean_clona_prim)),] %>% ggplot(aes(x = 100*mean_clona_prim, y = 100*mean_clona_met, color = cancer_type)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb), max.overlaps = 20) +
+  xlim(c(40,100)) +
+  xlab("primary mean %") +
+  ylim(c(40,100)) +
+  ylab("Metastatsis mean %") +
+  ggtitle("Percentage of Clonal mutations (PURPLE binned)") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw()
+
+
+
+
+
+
+
+
+df_purple_clonality_binned_cp <- df_purple_clonality_binned
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  tmp_df <- df_purple_clonality_binned_cp[df_purple_clonality_binned_cp$cancer_type == cancer_type,]
+  if (nrow(tmp_df[tmp_df$is_metastatic,]) >= 5 & nrow(tmp_df[!(tmp_df$is_metastatic),]) >= 5){
+    
+  } else {
+    df_purple_clonality_binned_cp <- df_purple_clonality_binned_cp[df_purple_clonality_binned_cp$cancer_type != cancer_type,]
+  }
+}
+
+unique(df_purple_clonality_binned_cp$cancer_type)
+
+df_purple_clonality_binned_cp$cancer_type <- factor(df_purple_clonality_binned_cp$cancer_type)
+
+
+
+
+
+plloott_box <- df_purple_clonality_binned_cp %>% ggplot(aes(x = is_metastatic, y = clonal/tmb, color = cancer_type)) + facet_wrap(~ cancer_type) +
+  geom_boxplot() +
+  # ggrepel::geom_text_repel(aes(label = cancer_type_abb)) +
+  # xlim(c(50,100)) +
+  xlab("Metastatic") +
+  stat_compare_means(comparisons = list(c('FALSE', 'TRUE')), method = "wilcox.test", label = "p.signif") +
+  ylab("Percentage of Clonal mutations (PURPLE binned)") +
+  ylim(c(0,1.5)) +
+  ggtitle("Distribution of clonality percentage per cancer type (PURPLE Pipeline binned)")
+
+
+
+
+com_plot <- ggarrange(plloott_mean, plloott_median, plloott_box,  ncol=3, common.legend = TRUE, legend="bottom")
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig13-clonality-prim-vs-metas-per-cancer-purple-binned.png", height = 920, width = 1380)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig13-clonality-prim-vs-metas-per-cancer-purple-binned.pdf", height = 14, width = 21)
+    print(com_plot)
+    dev.off()
+  }
+}
+
+
+
+
+
+# fig14
+#### raw clonality fig (fig2a)
+
+
+suff_num_tiss <- names(table(df_purple_clonality_binned$cancer_type)[as.vector(table(df_purple_clonality_binned$cancer_type[df_purple_clonality_binned$is_metastatic])) >= 10 & as.vector(table(df_purple_clonality_binned$cancer_type[!(df_purple_clonality_binned$is_metastatic)])) >= 10])
+
+df_purple_clonality_binned_rm <- df_purple_clonality_binned[df_purple_clonality_binned$cancer_type %in% suff_num_tiss,]
+
+df_purple_clonality_binned_rm$cancer_type <- factor(df_purple_clonality_binned_rm$cancer_type)
+
+
+df_purple_clonality_binned_rm[,2:5] <- df_purple_clonality_binned_rm[,2:5]/df_purple_clonality_binned_rm[,8]
+
+
+all_order_sample <- vector()
+df_purple_clonality_binned_rm$clonal_order <- rowSums(df_purple_clonality_binned_rm[,c(2,3)])
+
+for (tissue in unique(df_purple_clonality_binned_rm$cancer_type)){
+  tmp_df <- df_purple_clonality_binned_rm[df_purple_clonality_binned_rm$cancer_type == tissue,]
+  tissue_order <- tmp_df[order(tmp_df$clonal_order),"sample_id"]
+  
+  
+  all_order_sample <- append(all_order_sample, tissue_order)
+}
+
+
+df_purple_clonality_binned_rm$sample_id <- factor(df_purple_clonality_binned_rm$sample_id, levels = all_order_sample)
+
+str(df_purple_clonality_binned_rm)
+
+
+
+df_purple_clonality_binned_rm_tibble <-  gather(data = df_purple_clonality_binned_rm, key = "clonality_category", value = "clonality_value", clonal, probably_clonal, probably_subclonal, subclonal)
+
+
+df_purple_clonality_binned_rm_tibble$clonality_value <- 100*df_purple_clonality_binned_rm_tibble$clonality_value
+df_purple_clonality_binned_rm_tibble$clonality_category <- factor(df_purple_clonality_binned_rm_tibble$clonality_category)
+df_purple_clonality_binned_rm_tibble$clonality_category <- factor(df_purple_clonality_binned_rm_tibble$clonality_category, levels = rev(levels(df_purple_clonality_binned_rm_tibble$clonality_category)))
+df_purple_clonality_binned_rm_tibble$cancer_type <- factor(df_purple_clonality_binned_rm_tibble$cancer_type)
+
+
+plot_stacked_bar_plot_primary <- df_purple_clonality_binned_rm_tibble[!(df_purple_clonality_binned_rm_tibble$is_metastatic),] %>% ggplot(aes(x = sample_id, y = clonality_value, fill = clonality_category)) + facet_wrap(~ cancer_type, scale = "free_x") +
+  geom_bar(position="fill", stat="identity", aes(color=clonality_category)) +
+  scale_color_manual(values = c("yellow", "grey", "blue", "red")) +
+  scale_fill_manual(values = c("yellow", "grey", "blue", "red")) +
+  theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank()) +
+  ggtitle("Primary Cohort")
+
+plot_stacked_bar_plot_metastatic <- df_purple_clonality_binned_rm_tibble[df_purple_clonality_binned_rm_tibble$is_metastatic,] %>% ggplot(aes(x = sample_id, y = clonality_value, fill = clonality_category)) + facet_wrap(~ cancer_type, scale = "free_x") +
+  geom_bar(position="fill", stat="identity", aes(color=clonality_category)) +
+  scale_color_manual(values = c("yellow", "grey", "blue", "red")) +
+  scale_fill_manual(values = c("yellow", "grey", "blue", "red")) +
+  theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank()) +
+  ggtitle("Metastatic Cohort")
+
+
+
+  
+  
+
+
+combined_plot <- ggarrange(plot_stacked_bar_plot_primary, plot_stacked_bar_plot_metastatic, ncol = 1, nrow = 2, common.legend = T, legend = "right")
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig14-timing-stacked-bar-plot-per-cohort-binned-purple.png", height = 1360, width = 960)
+    print(combined_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig14-timing-stacked-bar-plot-per-cohort-binned-purple.pdf", height = 21, width = 14)
+    print(combined_plot)
+    dev.off()
+  }
+}

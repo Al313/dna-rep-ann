@@ -35,7 +35,7 @@ echo "#!/bin/bash
 
 guixr load-profile /hpc/cuppen/projects/P0013_WGS_patterns_Diagn/misc/processed/ali-proj/.guix-profile-berner-proj --<<EOF
 
-Rscript $RSCRIPT ${start_pos[${i}]}  ${end_pos[${i}]}
+Rscript $RSCRIPT ${start_pos[${i}]}  ${end_pos[${i}]} ${i}
 
 EOF
 " > ${job_script}

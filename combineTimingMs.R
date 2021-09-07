@@ -11,19 +11,19 @@
 # library(gghighlight)
 library(stringr)
 library(dplyr)
-# 
-# if (dir.exists("/hpc/cuppen/")){
-# 
-#   base_dir <- "/hpc/cuppen/projects/P0013_WGS_patterns_Diagn/"
-#   devtools::load_all(paste0(base_dir,'/CHORD/processed/scripts_main/mutSigExtractor/'))
-# 
-# } else {
-# 
-#   library(mutSigExtractor)
-# }
+
+if (dir.exists("/hpc/cuppen/")){
+
+  base_dir <- "/hpc/cuppen/projects/P0013_WGS_patterns_Diagn/"
+  devtools::load_all(paste0(base_dir,'/CHORD/processed/scripts_main/mutSigExtractor/'))
+
+} else {
+
+  library(mutSigExtractor)
+}
 
 
-# args <- commandArgs(trailingOnly=T)
+args <- commandArgs(trailingOnly=T)
 
 
 
@@ -768,3 +768,75 @@ if (dir.exists("/hpc/cuppen/")){
 
 
 
+
+
+
+### Purple clonality binned
+#1:nrow(manifest)
+
+no_rows <- as.numeric(args[2]) - as.numeric(args[1]) + 1
+df_purple_clonality_binned <- data.frame(sample_id = character(no_rows), clonal = numeric(no_rows), probably_clonal = numeric(no_rows), probably_subclonal = numeric(no_rows), subclonal = numeric(no_rows))
+
+for (i in 1:no_rows){
+  print(i)
+
+  j <- i + as.numeric(args[1]) - 1
+  sample_id <- manifest$sample[j]
+  print(sample_id)
+
+  if (dir.exists("/hpc/cuppen/")){
+    path_to_vcf <- paste0(manifest[j, "dir"], manifest[j, "som_vcf"])
+  } else {
+    path_to_vcf <- paste0(local, manifest[j, "dir"], manifest[j, "som_vcf"])
+  }
+
+
+
+  vcf <- variantsFromVcf(vcf.file = path_to_vcf,
+                         merge.consecutive = T,
+                         vcf.filter = "PASS",
+                         vcf.fields = c("CHROM", "POS", "REF", "ALT", "FILTER", "INFO"))
+  if (nrow(vcf) > 0){
+    selelcted_info_fields <- getInfoValues(vcf$info, keys = c("TNC", "SUBCL"))
+
+    selelcted_info_fields$SUBCL <- as.numeric(selelcted_info_fields$SUBCL)
+
+
+    selelcted_info_fields$SUBCL[is.na(selelcted_info_fields$SUBCL)] <- 0
+
+    percentiles <- quantile(selelcted_info_fields$SUBCL[selelcted_info_fields$SUBCL != 0], probs = c(0, 0.33, 0.66,1))
+
+    tbl_subcl <- table(selelcted_info_fields$SUBCL)
+
+
+    clonal <- sum(as.numeric(tbl_subcl["0"]))
+    probably_clonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[2])]))
+    probably_subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[2]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[3])]))
+    subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[3]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[4])]))
+
+
+    df_purple_clonality_binned$sample_id[i] <- sample_id
+    df_purple_clonality_binned[i,2:5] <- c(clonal, probably_clonal, probably_subclonal, subclonal)
+
+
+
+  } else {
+    df_purple_clonality_binned$sample_id[i] <- sample_id
+    df_purple_clonality_binned[i,2:5] <- rep(NA, times = 4)
+
+  }
+}
+
+if (dir.exists("/hpc/cuppen/")){
+  write.table(df_purple_clonality_binned, file = gzfile(paste0("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/", args[3], "-purple-clonality-binned.txt.gz")), sep = "\t", quote = F, row.names = F, col.names = FALSE)
+} else {
+  write.table(df_purple_clonality_binned, file = gzfile(paste0("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/", args[3], "purple-clonality-binned.txt.gz")), sep = "\t", quote = F, row.names = F, col.names = FALSE)
+}
+
+# if (dir.exists("/hpc/cuppen/")){
+#   df_purple_clonality_binned <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned.txt", sep = "\t", stringsAsFactors = F, header = FALSE)
+# } else {
+#   df_purple_clonality_binned <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned.txt", sep = "\t", stringsAsFactors = F, header = FALSE)
+# }
+# 
+# colnames(df_purple_clonality_binned) <- c("sample_id", "clonal", "probably_clonal", "probably_subclonal", "subclonal")
