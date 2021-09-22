@@ -12,6 +12,8 @@
 library(stringr)
 library(dplyr)
 
+`%notin%` <- Negate(`%in%`)
+
 if (dir.exists("/hpc/cuppen/")){
 
   base_dir <- "/hpc/cuppen/projects/P0013_WGS_patterns_Diagn/"
@@ -52,7 +54,6 @@ if (dir.exists("/hpc/cuppen/")){
   hmf_meta <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0013_WGS_patterns_Diagn/misc/processed/ali-lung-proj/datasets/hmf/metadata_whitelisted.tsv", sep = "\t", header = T, stringsAsFactors = F)
 }
 
-
 if (dir.exists("/hpc/cuppen/")){
   manifest <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/external-files/manifest_HMF_PCAWG.gene_ann.txt.gz", sep = "\t",
                        header = T, stringsAsFactors = F)
@@ -75,7 +76,6 @@ metadata_included$tmb <- rowSums(metadata_included[,22:23])
 
 
 ### VCF annotated with MS and timing information:
-
 
 
 # mut_tim <- read.csv(file = paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/timing/DO36159/DO36159.mutationaltiming.tsv.gz"), header = T, sep = "\t", stringsAsFactors = F)
@@ -118,20 +118,19 @@ metadata_included$tmb <- rowSums(metadata_included[,22:23])
 # 
 # for (i in args[1]:args[2]){
 #   sample_id <- metadata_included$sample_id[i]
-#   # print(i)
-#   # print(sample_id)
-#   
+#   print(i)
+#   print(sample_id)
+# 
 #   if (metadata_included$cohort[i] == "HMF"){
-#     
-#     
+# 
 #     set_name <- hmf_meta$setName[hmf_meta$sampleId == sample_id]
-#     
+# 
 #     if (dir.exists("/hpc/cuppen/")){
-#       mut_timing_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", set_name, "/", sample_id, ".mutationaltiming.tsv.gz")
+#       mut_timing_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/new-timing/", set_name, "/", sample_id, ".mutationaltiming.tsv.gz")
 #     } else {
-#       mut_timing_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", set_name, "/", sample_id, ".mutationaltiming.tsv.gz")
+#       mut_timing_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/new-timing/", set_name, "/", sample_id, ".mutationaltiming.tsv.gz")
 #     }
-#     
+# 
 #     if (file.exists(mut_timing_path)){
 #       mut_timing_file <- T
 #       mut_tim <- tryCatch(read.csv(file = mut_timing_path, header = T, sep = "\t", stringsAsFactors = F), error=function(e) NULL)
@@ -146,14 +145,14 @@ metadata_included$tmb <- rowSums(metadata_included[,22:23])
 #       timing_absent <- append(timing_absent, sample_id)
 #       # print(paste0("Mutational timing file for ", sample_id, " does not exist!"))
 #     }
-#     
-#     
+# 
+# 
 #     if (dir.exists("/hpc/cuppen/")){
 #       mut_signature_path <- paste0("/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
 #     } else {
 #       mut_signature_path <- paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
 #     }
-#     
+# 
 #     if (file.exists(mut_signature_path)){
 #       mut_signature_file <- T
 #       # mut_sig <- read.csv(file = mut_signature_path, header = T, sep = "\t", stringsAsFactors = F)
@@ -169,17 +168,17 @@ metadata_included$tmb <- rowSums(metadata_included[,22:23])
 #       signature_absent <- append(signature_absent, sample_id)
 #       # print(paste0("Mutational signature file for ", sample_id, " does not exist!"))
 #     }
-#     
-#     
+# 
+# 
 #   } else if (metadata_included$cohort[i] == "PCAWG"){
-#     
-#     
+# 
+#     print(i)
 #     if (dir.exists("/hpc/cuppen/")){
-#       mut_timing_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/timing/", sample_id, "/", sample_id, ".mutationaltiming.tsv.gz")
+#       mut_timing_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/new_timing/", sample_id, "/", sample_id, ".mutationaltiming.tsv.gz")
 #     } else {
-#       mut_timing_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/timing/", sample_id, "/", sample_id, ".mutationaltiming.tsv.gz")
+#       mut_timing_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/new_timing/", sample_id, "/", sample_id, ".mutationaltiming.tsv.gz")
 #     }
-#     
+# 
 #     if (file.exists(mut_timing_path)){
 #       mut_timing_file <- T
 #       mut_tim <- tryCatch(read.csv(file = mut_timing_path, header = T, sep = "\t", stringsAsFactors = F), error=function(e) NULL)
@@ -194,14 +193,14 @@ metadata_included$tmb <- rowSums(metadata_included[,22:23])
 #       timing_absent <- append(timing_absent, sample_id)
 #       # print(paste0("Mutational timing file for ", sample_id, " does not exist!"))
 #     }
-#     
-#     
+# 
+# 
 #     if (dir.exists("/hpc/cuppen/")){
 #       mut_signature_path <- paste0("/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
 #     } else {
 #       mut_signature_path <- paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
 #     }
-#     
+# 
 #     if (file.exists(mut_signature_path)){
 #       mut_signature_file <- T
 #       mut_sig <- tryCatch(read.csv(file = mut_signature_path, header = T, sep = "\t", stringsAsFactors = F), error=function(e) NULL)
@@ -216,26 +215,26 @@ metadata_included$tmb <- rowSums(metadata_included[,22:23])
 #       signature_absent <- append(signature_absent, sample_id)
 #       # print(paste0("Mutational signature file for ", sample_id, " does not exist!"))
 #     }
-#     
-#     
+# 
+# 
 #   }
-#   
+# 
 #   if (mut_timing_file & mut_signature_file){
-#     
+# 
 #     mut_tim$CHROM <- as.character(mut_tim$CHROM)
-#     
+# 
 #     colnames(mut_sig) <- toupper(colnames(mut_sig))
-#     
+# 
 #     mut_sig$CHROM <- sapply(str_split(mut_sig$CHROM, pattern = "r"), "[[", 2)
-#     
+# 
 #     shared_df <- intersect(mut_tim[,1:4], mut_sig[,1:4])
-#     
-#     
+# 
+# 
 #     combined_df <- merge(merge(shared_df, mut_sig, by = c("CHROM", "POS", "REF", "ALT")), mut_tim[,c(1:4,17:18,24:26)], by = c("CHROM", "POS", "REF", "ALT"))
-#     
-#     
-#     
-#     write.table(combined_df, file = gzfile(paste0(wd, "timing-ms-combined/", sample_id, ".txt.gz")), quote = F, row.names = F, sep = "\t")
+# 
+# 
+# 
+#     write.table(combined_df, file = gzfile(paste0(wd, "new2-timing-ms-combined/", sample_id, ".txt.gz")), quote = F, row.names = F, sep = "\t")
 #   }
 # }
 # 
@@ -244,8 +243,8 @@ metadata_included$tmb <- rowSums(metadata_included[,22:23])
 # cat("\n timing absent file list: \n", paste(timing_absent, collapse = " "))
 # cat("\n signature_absence_counter equals to \n", signature_absence_counter)
 # cat("\n signature absent file list: \n", paste(signature_absent, collapse = " "))
-# 
-# 
+
+
 
 
 
@@ -311,7 +310,197 @@ metadata_included$tmb <- rowSums(metadata_included[,22:23])
 
 
 
+### VCF annotated with MS and (binned purple) clonality information:
 
+# probably_clonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[2])]))
+# probably_subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[2]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[3])]))
+# subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[3]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[4])]))
+
+
+
+#args[1]:args[2]
+# for (i in args[1]:args[2]){
+#   print(i)
+# 
+# 
+#   sample_id <- manifest$sample[i]
+#   print(sample_id)
+# 
+#   if (dir.exists("/hpc/cuppen/")){
+#     path_to_vcf <- paste0(manifest[i, "dir"], manifest[i, "som_vcf"])
+#   } else {
+#     path_to_vcf <- paste0(local, manifest[i, "dir"], manifest[i, "som_vcf"])
+#   }
+# 
+# 
+# 
+#   vcf <- variantsFromVcf(vcf.file = path_to_vcf,
+#                          merge.consecutive = T,
+#                          vcf.filter = "PASS",
+#                          vcf.fields = c("CHROM", "POS", "REF", "ALT", "FILTER", "INFO"))
+#   if (nrow(vcf) > 0){
+#     selelcted_info_fields <- getInfoValues(vcf$info, keys = c("TNC", "SUBCL"))
+# 
+#     selelcted_info_fields$SUBCL <- as.numeric(selelcted_info_fields$SUBCL)
+# 
+# 
+#     selelcted_info_fields$SUBCL[is.na(selelcted_info_fields$SUBCL)] <- 0
+# 
+#     percentiles <- quantile(selelcted_info_fields$SUBCL[selelcted_info_fields$SUBCL != 0], probs = c(0, 0.33, 0.66,1))
+# 
+#     tbl_subcl <- table(selelcted_info_fields$SUBCL)
+# 
+# 
+#     clonal <- sum(as.numeric(tbl_subcl["0"]))
+#     probably_clonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(names(tbl_subcl))[-1] <= 0.33]))
+#     probably_subclonal <- sum(as.numeric(tbl_subcl[-1][0.33 < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= 0.66]))
+#     subclonal <- sum(as.numeric(tbl_subcl[-1][0.66 < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= 1]))
+#     
+# 
+#     merged <- cbind(vcf[,-5], selelcted_info_fields)
+# 
+#     for (j in 1:nrow(merged)){
+#       if (merged[j,"SUBCL"] == 0){
+#         merged[j,"SUBCL"] <- "clonal"
+#       } else if (merged[j,"SUBCL"] > 0 & merged[j,"SUBCL"] <= as.numeric(percentiles[2])) {
+#         merged[j,"SUBCL"] <- "probable_clonal"
+#       } else if (merged[j,"SUBCL"] > as.numeric(percentiles[2]) & merged[j,"SUBCL"] <= as.numeric(percentiles[3])) {
+#         merged[j,"SUBCL"] <- "probable_subclonal"
+#       } else if (merged[j,"SUBCL"] > as.numeric(percentiles[3]) & merged[j,"SUBCL"] <= as.numeric(percentiles[4])) {
+#         merged[j,"SUBCL"] <- "subclonal"
+#       }
+#     }
+# 
+# 
+# 
+#     if (dir.exists("/hpc/cuppen/")){
+#       mut_signature_path <- paste0("/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
+#     } else {
+#       mut_signature_path <- paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
+#     }
+# 
+#     mut_sig <- tryCatch(read.csv(file = mut_signature_path, header = T, sep = "\t", stringsAsFactors = F), error=function(e) NULL)
+#     shared_df <- dplyr::intersect(merged[,1:4], mut_sig[,1:4])
+#     # print(str(merged))
+#     # print(str(mut_sig))
+#     # print(str(shared_df))
+# 
+#     combined_df <- merge(merge(shared_df, mut_sig, by = c("chrom", "pos", "ref", "alt")), merged[,c(1:4,6)], by = c("chrom", "pos", "ref", "alt"))
+#     # print(nrow(combined_df))
+#     write.table(combined_df, file = gzfile(paste0(wd, "clonality--binned-purple2--ms-combined/", sample_id, ".txt.gz")), quote = F, row.names = F, sep = "\t")
+#   } else {
+#     write.table(NULL, file = gzfile(paste0(wd, "clonality--binned-purple2--ms-combined/", sample_id, ".txt.gz")), quote = F, row.names = F, sep = "\t")
+#   }
+# }
+
+
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  cosmic_sigs <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+} else {
+  cosmic_sigs <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+}
+
+
+# 
+# all.cols <- c("clonal", "probable_clonal", "probable_subclonal", "subclonal")
+# 
+# col.name <- cosmic_sigs$V1
+# 
+# mt <- matrix(nrow = 4*nrow(metadata_included), ncol = (3 + length(col.name)))
+# rownames(mt) <- as.character(1:(4*nrow(metadata_included)))
+# colnames(mt) <- c("sample_id", "timing", "info_exists", col.name)
+# 
+# 
+# first <- T
+# 
+# # nrow(metadata_included)
+# for (i in 1:nrow(metadata_included)){
+#   print(i)
+#   sample_id <- metadata_included$sample_id[i]
+#   print(sample_id)
+# 
+#   clonality_ms <- tryCatch(read.csv(file = paste0(wd, "clonality--binned-purple--ms-combined/", sample_id, ".txt.gz"), stringsAsFactors = F, header = T, sep = "\t"), error=function(e) NULL)
+#   
+#   if (!is.null(clonality_ms)){
+#     mm <- as.matrix(table(clonality_ms$assigned_sig, clonality_ms$SUBCL))
+#     
+#     m2 <- matrix(nrow = nrow(mm), ncol = length(all.cols), dimnames = list(NULL, all.cols))
+#     m2[ , colnames(mm)] <- mm
+#     rownames(m2) <- rownames(mm)
+# 
+#     mm <- m2
+# 
+#     cos_similarity_check <- as.numeric(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 4)) >= 85
+# 
+# 
+#     mm <- as.data.frame(mm)
+#     mm <- mm[cos_similarity_check,]
+# 
+#     duplicated_check <- duplicated(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2))
+# 
+# 
+#     duplicates <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)[duplicated_check]
+# 
+#     if (length(duplicates) > 0) {
+#       for (j in 1:length(duplicates)){
+#         duplicate_indeces <- which(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2) == duplicates[j])
+#         mm <- rbind(mm, colSums(mm[duplicate_indeces,]))
+#         rownames(mm)[nrow(mm)] <- paste0(".", duplicates[j])
+#         mm <- mm[-duplicate_indeces,]
+#       }
+#     }
+# 
+# 
+#     rownames(mm) <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)
+# 
+# 
+#     mm <- t(mm)
+# 
+#     if (!first){
+#       i <- i + (3*(i-1))
+#     }
+# 
+#     first <- F
+#     mt[i:(i+3),"sample_id"] <- sample_id
+#     mt[i:(i+3),"timing"] <- rownames(mm)
+#     mt[i:(i+3),"info_exists"] <- T
+# 
+#     mt[i:(i+3),colnames(mm)] <- mm
+# 
+#   } else {
+#     if (!first){
+#       i <- i + (3*(i-1))
+#     }
+#     first <- F
+#     mt[i:(i+3),"sample_id"] <- sample_id
+#     mt[i:(i+3),"timing"] <- rownames(mm)
+#     mt[i:(i+3),"info_exists"] <- F
+#   }
+# }
+# 
+# mt <- as.data.frame(mt)
+# mt$info_exists <- as.logical(mt$info_exists)
+# mt[,4:ncol(mt)] <- sapply(mt[,4:ncol(mt)], as.numeric)
+# 
+# 
+# if (dir.exists("/hpc/cuppen/")){
+#   write.table(mt, file = gzfile("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-binned-purple-df.txt.gz"), sep = "\t", quote = F, row.names = F)
+# } else {
+#   write.table(mt, file = gzfile("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-binned-purple-df.txt.gz"), sep = "\t", quote = F, row.names = F)
+# }
+
+
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  ms_clonality_binned_purple <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-binned-purple-df.txt.gz", sep = "\t", stringsAsFactors = F, header = T)
+} else {
+  ms_clonality_binned_purple <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-binned-purple-df.txt.gz", sep = "\t", stringsAsFactors = F, header = T)
+}
 
 
 
@@ -444,11 +633,13 @@ wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_
 
 #### Summarize mutational timing
 
-
+# 
+# global_timing_info <- data.frame(sample_id = character(7049), cohort = character(7049), early_clonal = numeric(7049), late_clonal = numeric(7049), na_clonal = numeric(7049), total_clonal = numeric(7049), subclonal = numeric(7049))
+# 
 # for (i in 1:nrow(metadata_included)){
 #   print(i)
 #   sample_id <- metadata_included$sample_id[i]
-#   file_path <- paste0(wd, "timing-ms-combined/", sample_id, ".txt.gz")
+#   file_path <- paste0(wd, "new-timing-ms-combined/", sample_id, ".txt.gz")
 #   if (file.exists(file_path)){
 #     combined_df <- read.csv(file = file_path, header = T, sep = "\t", stringsAsFactors = F)
 #     uu <- as.data.frame(table(combined_df$timing_class), stringsAsFactors = F)
@@ -468,15 +659,15 @@ wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_
 # }
 # 
 # 
-# write.table(global_timing_info, file = gzfile(paste0(wd, "r-objects/global-timing-df.txt.gz")), quote = F, row.names = F, sep = "\t")
+# write.table(global_timing_info, file = gzfile(paste0(wd, "r-objects/global-new-timing-df.txt.gz")), quote = F, row.names = F, sep = "\t")
 # 
 # 
-# global_timing_info <- read.csv(file = paste0(wd, "r-objects/global-timing-df.txt.gz"), header = T, sep = "\t", stringsAsFactors = F)
+# global_timing_info <- read.csv(file = paste0(wd, "r-objects/global-new-timing-df.txt.gz"), header = T, sep = "\t", stringsAsFactors = F)
 # 
 # 
 # global_timing_info <- merge(global_timing_info, metadata_included[,c(3,6,8,9,14,18,19,20,21,22,23,24)], by = "sample_id")
 # 
-# write.table(global_timing_info, file = gzfile(paste0(wd, "r-objects/global-timing-with-metadata.txt.gz")), quote = F, row.names = F, sep = "\t")
+# write.table(global_timing_info, file = gzfile(paste0(wd, "r-objects/global-new-timing-with-metadata.txt.gz")), quote = F, row.names = F, sep = "\t")
 
 
 
@@ -774,69 +965,87 @@ if (dir.exists("/hpc/cuppen/")){
 ### Purple clonality binned
 #1:nrow(manifest)
 
-no_rows <- as.numeric(args[2]) - as.numeric(args[1]) + 1
-df_purple_clonality_binned <- data.frame(sample_id = character(no_rows), clonal = numeric(no_rows), probably_clonal = numeric(no_rows), probably_subclonal = numeric(no_rows), subclonal = numeric(no_rows))
 
-for (i in 1:no_rows){
-  print(i)
-
-  j <- i + as.numeric(args[1]) - 1
-  sample_id <- manifest$sample[j]
-  print(sample_id)
-
-  if (dir.exists("/hpc/cuppen/")){
-    path_to_vcf <- paste0(manifest[j, "dir"], manifest[j, "som_vcf"])
-  } else {
-    path_to_vcf <- paste0(local, manifest[j, "dir"], manifest[j, "som_vcf"])
-  }
-
-
-
-  vcf <- variantsFromVcf(vcf.file = path_to_vcf,
-                         merge.consecutive = T,
-                         vcf.filter = "PASS",
-                         vcf.fields = c("CHROM", "POS", "REF", "ALT", "FILTER", "INFO"))
-  if (nrow(vcf) > 0){
-    selelcted_info_fields <- getInfoValues(vcf$info, keys = c("TNC", "SUBCL"))
-
-    selelcted_info_fields$SUBCL <- as.numeric(selelcted_info_fields$SUBCL)
-
-
-    selelcted_info_fields$SUBCL[is.na(selelcted_info_fields$SUBCL)] <- 0
-
-    percentiles <- quantile(selelcted_info_fields$SUBCL[selelcted_info_fields$SUBCL != 0], probs = c(0, 0.33, 0.66,1))
-
-    tbl_subcl <- table(selelcted_info_fields$SUBCL)
-
-
-    clonal <- sum(as.numeric(tbl_subcl["0"]))
-    probably_clonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[2])]))
-    probably_subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[2]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[3])]))
-    subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[3]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[4])]))
-
-
-    df_purple_clonality_binned$sample_id[i] <- sample_id
-    df_purple_clonality_binned[i,2:5] <- c(clonal, probably_clonal, probably_subclonal, subclonal)
-
-
-
-  } else {
-    df_purple_clonality_binned$sample_id[i] <- sample_id
-    df_purple_clonality_binned[i,2:5] <- rep(NA, times = 4)
-
-  }
-}
-
-if (dir.exists("/hpc/cuppen/")){
-  write.table(df_purple_clonality_binned, file = gzfile(paste0("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/", args[3], "-purple-clonality-binned.txt.gz")), sep = "\t", quote = F, row.names = F, col.names = FALSE)
-} else {
-  write.table(df_purple_clonality_binned, file = gzfile(paste0("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/", args[3], "purple-clonality-binned.txt.gz")), sep = "\t", quote = F, row.names = F, col.names = FALSE)
-}
-
+## Apparently it's better to work with percentiles than using hard cutoffs
+# 
+# probably_clonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[2])]))
+# probably_subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[2]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[3])]))
+# subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[3]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[4])]))
+# 
+# 
+# no_rows <- as.numeric(args[2]) - as.numeric(args[1]) + 1
+# df_purple_clonality_binned <- data.frame(sample_id = character(no_rows), clonal = numeric(no_rows), probably_clonal = numeric(no_rows), probably_subclonal = numeric(no_rows), subclonal = numeric(no_rows))
+# 
+# for (i in 1:no_rows){
+#   print(i)
+# 
+#   j <- i + as.numeric(args[1]) - 1
+#   sample_id <- manifest$sample[j]
+#   print(sample_id)
+# 
+#   if (dir.exists("/hpc/cuppen/")){
+#     path_to_vcf <- paste0(manifest[j, "dir"], manifest[j, "som_vcf"])
+#   } else {
+#     path_to_vcf <- paste0(local, manifest[j, "dir"], manifest[j, "som_vcf"])
+#   }
+# 
+# 
+# 
+#   vcf <- variantsFromVcf(vcf.file = path_to_vcf,
+#                          merge.consecutive = T,
+#                          vcf.filter = "PASS",
+#                          vcf.fields = c("CHROM", "POS", "REF", "ALT", "FILTER", "INFO"))
+#   if (nrow(vcf) > 0){
+#     selelcted_info_fields <- getInfoValues(vcf$info, keys = c("TNC", "SUBCL"))
+# 
+#     selelcted_info_fields$SUBCL <- as.numeric(selelcted_info_fields$SUBCL)
+# 
+# 
+#     selelcted_info_fields$SUBCL[is.na(selelcted_info_fields$SUBCL)] <- 0
+# 
+#     percentiles <- quantile(selelcted_info_fields$SUBCL[selelcted_info_fields$SUBCL != 0], probs = c(0, 0.33, 0.66,1))
+# 
+#     tbl_subcl <- table(selelcted_info_fields$SUBCL)
+# 
+# 
+#     clonal <- sum(as.numeric(tbl_subcl["0"]))
+#     probably_clonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(names(tbl_subcl))[-1] <= 0.33]))
+#     probably_subclonal <- sum(as.numeric(tbl_subcl[-1][0.33 < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= 0.66]))
+#     subclonal <- sum(as.numeric(tbl_subcl[-1][0.66 < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= 1]))
+# 
+# 
+#     df_purple_clonality_binned$sample_id[i] <- sample_id
+#     df_purple_clonality_binned[i,2:5] <- c(clonal, probably_clonal, probably_subclonal, subclonal)
+# 
+# 
+# 
+#   } else {
+#     df_purple_clonality_binned$sample_id[i] <- sample_id
+#     df_purple_clonality_binned[i,2:5] <- rep(NA, times = 4)
+# 
+#   }
+# }
+# 
 # if (dir.exists("/hpc/cuppen/")){
-#   df_purple_clonality_binned <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned.txt", sep = "\t", stringsAsFactors = F, header = FALSE)
+#   write.table(df_purple_clonality_binned, file = gzfile(paste0("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/tmp/", args[3], "-purple-clonality-binned.txt.gz")), sep = "\t", quote = F, row.names = F, col.names = FALSE)
 # } else {
-#   df_purple_clonality_binned <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned.txt", sep = "\t", stringsAsFactors = F, header = FALSE)
+#   write.table(df_purple_clonality_binned, file = gzfile(paste0("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/tmp/", args[3], "purple-clonality-binned.txt.gz")), sep = "\t", quote = F, row.names = F, col.names = FALSE)
+# }
+# 
+# ### Concatenating multiple text files into a single file in Bash
+# 
+# if (dir.exists("/hpc/cuppen/")){
+#   df_purple_clonality_binned <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned.txt.gz", sep = "\t", stringsAsFactors = F, header = FALSE)
+# } else {
+#   df_purple_clonality_binned <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned.txt.gz", sep = "\t", stringsAsFactors = F, header = FALSE)
 # }
 # 
 # colnames(df_purple_clonality_binned) <- c("sample_id", "clonal", "probably_clonal", "probably_subclonal", "subclonal")
+# 
+# 
+# 
+# if (dir.exists("/hpc/cuppen/")){
+#   write.table(df_purple_clonality_binned, file = gzfile(paste0("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned2.txt.gz")), sep = "\t", quote = F, row.names = F, col.names = T)
+# } else {
+#   write.table(df_purple_clonality_binned, file = gzfile(paste0("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned2.txt.gz")), sep = "\t", quote = F, row.names = F, col.names = T)
+# }

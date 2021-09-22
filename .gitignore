@@ -1,7 +1,12 @@
 all-diplotypes-metadata-merged.txt
 external-files/geneDriverAnnotator
+epigenomic-annotation/annotated-vcfs
 diplotype-output
 clonality-ms-combined
+clonality--binned-purple--ms-combined
+clonality--binned-purple2--ms-combined
 timing-ms-combined
+new-timing-ms-combined/
+new2-timing-ms-combined/
 *.png
 *.pdf
