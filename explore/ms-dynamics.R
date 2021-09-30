@@ -16,7 +16,7 @@ library(tidyr)
 library(plyr)
 library(miscTools)
 library(effsize)
-
+library(gggibbous)
 
 
 
@@ -1980,7 +1980,7 @@ summary(log2(df[!is.na(df$fold_change),"fold_change"]))
 df$cosmic_sig <- factor(df$cosmic_sig)
 # df[df$fold_change > 50 & !is.na(df$fold_change), "fold_change"] <- 50
 
-gg_plot <- df %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change))) +
+gg_plot <- df[!is.na(df$fold_change),] %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change))) +
   geom_boxplot() +
   geom_text(x = 40, y = -10, label = "Median of medians = -0.75", color = "red") +
   geom_text(x= 5, y = 7.5, label = "Late clonal", face = "bold") +
@@ -2005,7 +2005,7 @@ df2$fold_change[!is.na(df2$fold_change)] <- df2$fold_change[!is.na(df2$fold_chan
 
 
 
-gg_plot2 <- df2 %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change))) +
+gg_plot2 <- df2[!is.na(df2$fold_change),] %>% ggplot(aes(x = reorder(cosmic_sig,log2(fold_change),na.rm = TRUE), y = log2(fold_change))) +
   geom_boxplot() +
   geom_text(x= 5, y = 7.5, label = "Late clonal", face = "bold") +
   geom_text(x= 5, y = -10, label = "Early clonal", face = "bold") +
@@ -3523,4 +3523,871 @@ for (i in 1:2) {
 }
 
 
+
+# ************************************************************************************************************************************************
+# Fig10-1: comparing the mutation timing of mutational signature between prim and metas in a dot plot per cancer type
+
+library(gggibbous)
+library(RColorBrewer)
+library(gtools)
+
+
+df <- readRDS(file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/df.all.rds"))
+
+df2 <- df
+
+
+df2$fold_change[!is.na(df2$fold_change)] <- df2$fold_change[!is.na(df2$fold_change)] * 1.67862
+
+
+df2 <- merge(df2, metadata_included[,c("sample_id", "cancer_type", "cancer_type_code" ,"is_metastatic")], by = "sample_id")
+# 
+sigs <- unique(df2$cosmic_sig)
+cancerTypes <- unique(df2$cancer_type)
+cancerTypesCodes <- unique(df2$cancer_type_code)
+cohort <- unique(df2$is_metastatic)
+nrow <- length(sigs)*length(cancerTypes)*length(cohort)
+
+
+
+dff <- data.frame(cosmic_sig = character(nrow), cancer_types = character(nrow), cancer_types_code = character(nrow), is_metastatic = character(nrow), median_foldChange = numeric(nrow), mean_foldChange = numeric(nrow), number_of_samples = integer(nrow))
+
+
+for (i in 1:length(sigs)){
+  for (j in 1:length(cancerTypes)){
+    jj <- j + ((length(cohort)-1)*(j-1))
+    for (k in 1:length(cohort)){
+      tmp_df <- df2[df2$cosmic_sig == as.character(sigs[i]) & df2$cancer_type == cancerTypes[j] & df2$is_metastatic == cohort[k] & !is.na(df2$fold_change),]
+      dff[length(cancerTypes)*length(cohort)*(i-1)  + jj+k-1,1:4] <- c(as.character(sigs[i]), cancerTypes[j], cancerTypesCodes[j], cohort[k])
+      if (nrow(tmp_df) >= 30){
+        dff[length(cancerTypes)*length(cohort)*(i-1) + jj+k-1,5:7] <- c(median(tmp_df$fold_change, na.rm = T), mean(tmp_df$fold_change, na.rm = T), nrow(tmp_df))
+      } else {
+        dff[length(cancerTypes)*length(cohort)*(i-1) + jj+k-1,5:7] <- c(NA, NA, nrow(tmp_df))
+      }
+    }
+  }
+}
+
+dff <- dff[!is.na(dff$median_foldChange),]
+
+dff$is_metastatic <- as.logical(dff$is_metastatic)
+dff_prim <- dff[!(dff$is_metastatic),]
+dff_metas <- dff[dff$is_metastatic,]
+
+for (i in 1:length(sigs)){
+  for (j in 1:length(cancerTypes)){
+    tmp <- dff[dff$cosmic_sig == sigs[i] & dff$cancer_types == cancerTypes[j],]
+    if (nrow(tmp) == 2){
+
+    } else {
+      dff <- dff[dff$cosmic_sig != sigs[i] | dff$cancer_types != cancerTypes[j],]
+    }
+  }
+}
+
+saveRDS(dff, file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/dff.fig10-1.rds"))
+
+
+
+dff <- readRDS(file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/dff.fig10-1.rds"))
+
+dff2 <- dff
+
+
+dff2$is_metastatic <- as.logical(dff2$is_metastatic)
+
+
+
+# doing the statistical tests
+
+df2 <- df2[!is.na(df2$fold_change),]
+
+
+sigs <- as.character(unique(df2$cosmic_sig))
+cancerTypes <- unique(df2$cancer_type)
+cancerTypesCodes <- unique(df2$cancer_type_code)
+nrow <- length(sigs)*length(cancerTypes)
+
+for (i in 1:length(sigs)){
+  for (j in 1:length(cancerTypes)){
+    tmp <- df2[df2$cosmic_sig == sigs[i] & df2$cancer_type == cancerTypes[j],]
+    tmp_prim <- tmp[!(tmp$is_metastatic),]
+    tmp_metas <- tmp[tmp$is_metastatic,]
+    
+    if (nrow(tmp_prim) >= 10 & nrow(tmp_metas) >= 10){
+      
+    } else {
+      df2 <- df2[df2$cosmic_sig != sigs[i] | df2$cancer_type != cancerTypes[j],]
+    }
+  }
+}
+
+
+sigs <- as.character(unique(df2$cosmic_sig))
+cancerTypes <- unique(df2$cancer_type)
+cancerTypesCodes <- unique(df2$cancer_type_code)
+nrow <- length(sigs)*length(cancerTypes)
+
+
+test_df <- data.frame(cosmic_sig = character(nrow), cancer_types = character(nrow), cancer_type_code = character(nrow), p_value = numeric(nrow), effect_size = character(nrow))
+
+
+
+for (i in 1:length(sigs)){
+  ii <- i + (j-1)*(i-1)
+  for (j in 1:length(cancerTypes)){
+    tmp <- df2[df2$cosmic_sig == sigs[i] & df2$cancer_type == cancerTypes[j],]
+    tmp_prim <- tmp[!(tmp$is_metastatic),"fold_change"]
+    tmp_metas <- tmp[tmp$is_metastatic,"fold_change"]
+    
+    test_df[ii+j-1,1:3] <- c(sigs[i], cancerTypes[j], cancerTypesCodes[j])
+    if (nrow(tmp) > 0){
+      wilcox_res <- wilcox.test(tmp_prim, tmp_metas)
+      
+      test_df[ii+j-1,4] <- wilcox_res$p.value
+      
+      effsize_res <- cohen.d(tmp_prim, tmp_metas, hedges.correction=T)
+      test_df[ii+j-1,5] <- abs(effsize_res$estimate)
+    } else {
+      test_df[ii+j-1,4:5] <- rep(NA, 2)
+      
+    }
+  }
+}
+
+test_df$cosmic_sig <- factor(test_df$cosmic_sig, levels = mixedsort(unique(test_df$cosmic_sig)))
+dff2$cosmic_sig <- factor(dff2$cosmic_sig, levels = mixedsort(unique(dff2$cosmic_sig)))
+
+
+dff2 <- merge(dff2, test_df, by = c("cosmic_sig", "cancer_types"))
+
+dff2$effect_size <- as.numeric(dff2$effect_size)
+dff2$signif_p <- dff2$p_value < 0.05
+
+dff2$signif_p <- factor(dff2$signif_p, levels = c("FALSE", "TRUE"))
+
+dot_plot <- dff2 %>%
+  ggplot(aes(x=cosmic_sig, y = cancer_types_code, size = effect_size)) + 
+  theme_bw() +
+  gggibbous::geom_moon( 
+    aes(ratio=0.5, right=is_metastatic, fill=log2(median_foldChange), linetype = signif_p), stroke = 0.3) +
+  scale_fill_distiller(name = "log2(median of late clonal/early clonal)", palette='Spectral') +
+  scale_size_continuous(name="Effect size (Cohen's d)", range=c(2,12)) +
+  scale_linetype((name='Significance (< 0.05)')) +
+  theme(axis.text.x=element_text(angle=90, hjust=0, vjust=0.5, size = 10), 
+        axis.text.y=element_text(vjust=0.5, size = 10),
+        axis.title = element_text(size = 20),
+        plot.title = element_text(size = 30, hjust = 0.5),
+        plot.caption = element_text(size = 10)) +
+  labs(caption = "Left half: primary \n Right half: metastatic", title = "Mutational Signature Timing \n") +
+  xlab("\nCosmic signature") +
+  ylab ("Cancer types")
+
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig10-1-1-ms-timing-per-cancer-dotplot-10-sample-citeria.png", height = 960, width = 1440)
+    print(dot_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig10-1-1-ms-timing-per-cancer-dotplot-10-sample-citeria.pdf", height = 14, width = 21)
+    print(dot_plot)
+    dev.off()
+  }
+}
+
+
+
+# plotting the two cohorts separately by (2.5% contribution threshold data)
+
+
+if (dir.exists("/hpc/cuppen/")){
+  cosmic_sigs <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+} else {
+  cosmic_sigs <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+}
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  ms_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df-2.5-percent-threhold.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  ms_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df-2.5-percent-threshold.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+}
+
+df <- data.frame(sample_id = character(7049*51), cosmic_sig = character(7049*51), fold_change = numeric(7049*51))
+
+
+# length(metadata_included$sample_id)
+for (i in 1:length(metadata_included$sample_id)){
+  print(i)
+  sample_id <- metadata_included$sample_id[i]
+  i <- i + (50*(i-1))
+
+  for (j in 1:length(cosmic_sigs$V1)){
+
+    df[i+j-1, "sample_id"] <- sample_id
+    df[i+j-1, "cosmic_sig"] <- cosmic_sigs$V1[j]
+    late_count <-  ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [late]",cosmic_sigs$V1[j]]
+    early_count <- ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [early]",cosmic_sigs$V1[j]]
+
+    if (!is.na(late_count) & !is.na(early_count) & late_count != 0 & early_count != 0){
+      df[i+j-1, "fold_change"] <- late_count/early_count
+    } else {
+      df[i+j-1, "fold_change"] <- NA
+    }
+  }
+}
+saveRDS(df, file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/df.all-2.5-percent-threshold.rds"))
+
+df <- readRDS(file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/df.all-2.5-percent-threshold.rds"))
+
+df2 <-df
+
+df2 <- merge(df2, metadata_included[,c("sample_id", "cancer_type", "cancer_type_code" ,"is_metastatic", "cohort")], by = "sample_id")
+
+sigs <- unique(df2$cosmic_sig)
+cancerTypes <- unique(df2$cancer_type)
+cancerTypesCodes <- unique(df2$cancer_type_code)
+cohort <- unique(df2$cohort)
+nrow <- length(sigs)*length(cancerTypes)*length(cohort)
+
+
+
+dff <- data.frame(cosmic_sig = character(nrow), cancer_types = character(nrow), cancer_types_code = character(nrow), cohort = character(nrow), median_foldChange = numeric(nrow), mean_foldChange = numeric(nrow), number_of_samples = integer(nrow))
+
+
+for (i in 1:length(sigs)){
+  for (j in 1:length(cancerTypes)){
+    jj <- j + ((length(cohort)-1)*(j-1))
+    for (k in 1:length(cohort)){
+      tmp_df <- df2[df2$cosmic_sig == as.character(sigs[i]) & df2$cancer_type == cancerTypes[j] & df2$cohort == cohort[k] & !is.na(df2$fold_change),]
+      dff[length(cancerTypes)*length(cohort)*(i-1)  + jj+k-1,1:4] <- c(as.character(sigs[i]), cancerTypes[j], cancerTypesCodes[j], cohort[k])
+      if (nrow(tmp_df) >= 10){
+        dff[length(cancerTypes)*length(cohort)*(i-1) + jj+k-1,5:7] <- c(median(tmp_df$fold_change, na.rm = T), mean(tmp_df$fold_change, na.rm = T), nrow(tmp_df))
+      } else {
+        dff[length(cancerTypes)*length(cohort)*(i-1) + jj+k-1,5:7] <- c(NA, NA, nrow(tmp_df))
+      }
+    }
+  }
+}
+
+dff <- dff[!is.na(dff$median_foldChange),]
+
+
+
+dff$cohort <- factor(dff$cohort)
+
+
+# saveRDS(dff, file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/dff.fig10-1.rds"))
+
+dff2 <- dff
+
+
+# dff2$is_metastatic <- as.logical(dff2$is_metastatic)
+
+dff2_prim <- dff2[dff2$cohort == "PCAWG",]
+dff2_metas <- dff2[dff2$cohort == "HMF",]
+
+
+
+
+str(dff2_prim)
+dot_plot_metas <- dff2_metas %>%
+  ggplot(aes(x=cosmic_sig, y = cancer_types_code, fill=log2(median_foldChange)), size = 5) + 
+  theme_bw() +
+  gggibbous::geom_moon(ratio=1, stroke = 0.3) +
+  scale_fill_distiller(name = "log2(median of late clonal/early clonal)", palette='Spectral') +
+  # scale_size_continuous(name="Effect size (Cohen's d)", range=c(2,12)) +
+  # scale_linetype((name='Significance (< 0.05)')) +
+  theme(axis.text.x=element_text(angle=90, hjust=0, vjust=0.5, size = 10), 
+        axis.text.y=element_text(vjust=0.5, size = 10),
+        axis.title = element_text(size = 20),
+        plot.title = element_text(size = 30, hjust = 0.5),
+        plot.caption = element_text(size = 10)) +
+  labs(caption = "10 sample + 2.5% threshold", title = "Mutational Signature Timing in HMF Tumors\n") +
+  xlab("\nCosmic signature") +
+  ylab ("Cancer types")
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig10-3-ms-timing-per-cancer-dotplot-10-2.5-prim.png", height = 960, width = 1440)
+    print(dot_plot_prim)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig10-3-ms-timing-per-cancer-dotplot-10-2.5-prim.pdf", height = 14, width = 21)
+    print(dot_plot_prim)
+    dev.off()
+  }
+}
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig10-3-ms-timing-per-cancer-dotplot-10-2.5-metas.png", height = 960, width = 1440)
+    print(dot_plot_metas)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig10-3-ms-timing-per-cancer-dotplot-10-2.5-metas.pdf", height = 14, width = 21)
+    print(dot_plot_metas)
+    dev.off()
+  }
+}
+
+
+
+### fi10-2 using the mean fraction instead of median of ratios
+
+
+
+
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  cosmic_sigs <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+} else {
+  cosmic_sigs <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs.txt", sep = "\t", header = F)
+}
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  ms_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  ms_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+}
+
+# ddf <- data.frame(sample_id = character(7049*51), cosmic_sig = character(7049*51), fraction = numeric(7049*51))
+# 
+# 
+# # length(metadata_included$sample_id)
+# for (i in 1:length(metadata_included$sample_id)){
+#   print(i)
+#   sample_id <- metadata_included$sample_id[i]
+#   i <- i + (50*(i-1))
+# 
+#   for (j in 1:length(cosmic_sigs$V1)){
+# 
+#     ddf[i+j-1, "sample_id"] <- sample_id
+#     ddf[i+j-1, "cosmic_sig"] <- cosmic_sigs$V1[j]
+#     late_count <-  ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [late]",cosmic_sigs$V1[j]]
+#     early_count <- ms_timing_df[ms_timing_df$sample_id == sample_id & ms_timing_df$timing == "clonal [early]",cosmic_sigs$V1[j]]
+# 
+#     if (!is.na(late_count) & !is.na(early_count) & late_count != 0 & early_count != 0){
+#       ddf[i+j-1, "fraction"] <- late_count/(late_count + early_count)
+#     } else {
+#       ddf[i+j-1, "fold_change"] <- NA
+#     }
+#   }
+# }
+# 
+# 
+# saveRDS(ddf, file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/ddf.all.rds"))
+
+ddf <- readRDS(file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/ddf.all.rds"))
+
+# summary(ddf$fraction)
+
+
+ddf2 <- ddf
+
+
+
+ddf2 <- merge(ddf2, metadata_included[,c("sample_id", "cancer_type", "cancer_type_code" ,"is_metastatic")], by = "sample_id")
+
+
+# 
+# sigs <- unique(ddf2$cosmic_sig)
+# cancerTypes <- unique(ddf2$cancer_type)
+# cancerTypesCodes <- unique(ddf2$cancer_type_code)
+# cohort <- unique(ddf2$is_metastatic)
+# nrow <- length(sigs)*length(cancerTypes)*length(cohort)
+# 
+# 
+# 
+# ddff <- data.frame(cosmic_sig = character(nrow), cancer_types = character(nrow), cancer_types_code = character(nrow), is_metastatic = character(nrow), median_fraction = numeric(nrow), mean_fraction = numeric(nrow), number_of_samples = integer(nrow))
+# 
+# 
+# for (i in 1:length(sigs)){
+#   for (j in 1:length(cancerTypes)){
+#     jj <- j + ((length(cohort)-1)*(j-1))
+#     for (k in 1:length(cohort)){
+#       tmp_df <- ddf2[ddf2$cosmic_sig == as.character(sigs[i]) & ddf2$cancer_type == cancerTypes[j] & ddf2$is_metastatic == cohort[k] & !is.na(ddf2$fraction),]
+#       ddff[length(cancerTypes)*length(cohort)*(i-1)  + jj+k-1,1:4] <- c(as.character(sigs[i]), cancerTypes[j], cancerTypesCodes[j], cohort[k])
+#       if (nrow(tmp_df) > 2){
+#         ddff[length(cancerTypes)*length(cohort)*(i-1) + jj+k-1,5:7] <- c(median(tmp_df$fraction, na.rm = T), mean(tmp_df$fraction, na.rm = T), nrow(tmp_df))
+#       } else {
+#         ddff[length(cancerTypes)*length(cohort)*(i-1) + jj+k-1,5:7] <- c(NA, NA, nrow(tmp_df))
+#       }
+#     }
+#   }
+# }
+# 
+# ddff <- ddff[!is.na(ddff$median_fraction),]
+# 
+# 
+# for (i in 1:length(sigs)){
+#   for (j in 1:length(cancerTypes)){
+#     tmp <- ddff[ddff$cosmic_sig == sigs[i] & ddff$cancer_types == cancerTypes[j],]
+#     if (nrow(tmp) == 2){
+# 
+#     } else {
+#       ddff <- ddff[ddff$cosmic_sig != sigs[i] | ddff$cancer_types != cancerTypes[j],]
+#     }
+#   }
+# }
+# 
+# saveRDS(ddff, file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/ddff.fig10-2.rds"))
+
+ddff <- readRDS(file = paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-clonality-ratios/ddff.fig10-2.rds"))
+
+
+ddff2 <- ddff
+
+
+ddff2$is_metastatic <- as.logical(ddff2$is_metastatic)
+
+
+
+
+# doing the statistical tests
+
+ddf2 <- ddf2[!is.na(ddf2$fraction),]
+
+sigs <- as.character(unique(ddf2$cosmic_sig))
+cancerTypes <- unique(ddf2$cancer_type)
+cancerTypesCodes <- unique(ddf2$cancer_type_code)
+nrow <- length(sigs)*length(cancerTypes)
+
+for (i in 1:length(sigs)){
+  for (j in 1:length(cancerTypes)){
+    tmp <- ddf2[ddf2$cosmic_sig == sigs[i] & ddf2$cancer_type == cancerTypes[j],]
+    tmp_prim <- tmp[!(tmp$is_metastatic),]
+    tmp_metas <- tmp[tmp$is_metastatic,]
+    
+    if (nrow(tmp_prim) > 2 & nrow(tmp_metas) > 2){
+      
+    } else {
+      ddf2 <- ddf2[ddf2$cosmic_sig != sigs[i] | ddf2$cancer_type != cancerTypes[j],]
+    }
+  }
+}
+
+
+sigs <- as.character(unique(ddf2$cosmic_sig))
+cancerTypes <- unique(ddf2$cancer_type)
+cancerTypesCodes <- unique(ddf2$cancer_type_code)
+nrow <- length(sigs)*length(cancerTypes)
+
+
+test_df <- data.frame(cosmic_sig = character(nrow), cancer_types = character(nrow), cancer_type_code = character(nrow), p_value = numeric(nrow), effect_size = character(nrow))
+
+
+
+for (i in 1:length(sigs)){
+  ii <- i + (j-1)*(i-1)
+  for (j in 1:length(cancerTypes)){
+    tmp <- ddf2[ddf2$cosmic_sig == sigs[i] & ddf2$cancer_type == cancerTypes[j],]
+    tmp_prim <- tmp[!(tmp$is_metastatic),"fraction"]
+    tmp_metas <- tmp[tmp$is_metastatic,"fraction"]
+    
+    test_df[ii+j-1,1:3] <- c(sigs[i], cancerTypes[j], cancerTypesCodes[j])
+    if (nrow(tmp) > 0){
+      wilcox_res <- wilcox.test(tmp_prim, tmp_metas)
+      
+      test_df[ii+j-1,4] <- wilcox_res$p.value
+      
+      effsize_res <- cohen.d(tmp_prim, tmp_metas, hedges.correction=T)
+      test_df[ii+j-1,5] <- abs(effsize_res$estimate)
+    } else {
+      test_df[ii+j-1,4:5] <- rep(NA, 2)
+      
+    }
+  }
+}
+
+test_df$cosmic_sig <- factor(test_df$cosmic_sig, levels = mixedsort(unique(test_df$cosmic_sig)))
+
+
+ddff2$cosmic_sig <- factor(ddff2$cosmic_sig, levels = mixedsort(unique(ddff2$cosmic_sig)))
+
+
+ddff2 <- merge(ddff2, test_df, by = c("cosmic_sig", "cancer_types"))
+
+ddff2$effect_size <- as.numeric(ddff2$effect_size)
+ddff2$signif_p <- ddff2$p_value < 0.05
+
+ddff2$signif_p <- factor(ddff2$signif_p, levels = c("FALSE", "TRUE"))
+
+dot_plot <- ddff2 %>%
+  ggplot(aes(x=cosmic_sig, y = cancer_types_code, size = effect_size)) + 
+  theme_bw() +
+  gggibbous::geom_moon( 
+    aes(ratio=0.5, right=is_metastatic, fill=median_fraction, linetype = signif_p), stroke = 0.3) +
+  scale_fill_distiller(name = "Median of late clonal fraction", palette='Spectral') +
+  scale_size_continuous(name="Effect size (Cohen's d)", range=c(2,12)) +
+  scale_linetype((name='Significance (< 0.05)')) +
+  theme(axis.text.x=element_text(angle=90, hjust=0, vjust=0.5, size = 10), 
+        axis.text.y=element_text(vjust=0.5, size = 10),
+        axis.title = element_text(size = 20),
+        plot.title = element_text(size = 30, hjust = 0.5),
+        plot.caption = element_text(size = 10)) +
+  labs(caption = "Left half: primary \n Right half: metastatic", title = "Mutational Signature Timing \n") +
+  xlab("\nCosmic signature") +
+  ylab ("Cancer types")
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig10-2-ms-timing-median-fraction-per-cancer-dotplot.png", height = 960, width = 1440)
+    print(dot_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig10-2-ms-timing-median-fraction-per-cancer-dotplot.pdf", height = 14, width = 21)
+    print(dot_plot)
+    dev.off()
+  }
+}
+
+
+
+
+
+### fig18 clonality with updated softfilter pcawg
+
+
+
+
+
+purple_timing <- read.csv(file = paste0(wd, "r-objects/all-updated-purple-timing.txt.gz"), stringsAsFactors = F, header = T, sep = "\t")
+
+purple_timing <- merge(purple_timing, metadata_included[,c("sample_id", "cancer_type","cancer_type_code", "cohort")], by = "sample_id")
+
+purple_timing$tmb <- rowSums(purple_timing[,6:7])
+
+
+
+cancer_types <- unique(purple_timing$cancer_type)
+cancer_type_abb <- unique(purple_timing$cancer_type_code)
+
+ff <- data.frame(cancer_type = character(59), cancer_type_abb = character(59), cancer_type_complete = character(59), median_clona_met = numeric(59), median_clona_prim = numeric(59))
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  cancer_type_complete <- paste0(cancer_type, " (", cancer_type_abb , ")")
+  tmp_df <- purple_timing[purple_timing$cancer_type == cancer_type & purple_timing$subclonal_tmb_80_cutoff != 0,]
+  
+  ff[i,1:3] <- c(cancer_type, cancer_type_abb, cancer_type_complete)
+  # print(cancer_type)
+  # print(head(tmp_df))
+  # print(nrow(tmp_df[tmp_df$cohort == "PCAWG",]))
+  # print(nrow(tmp_df[tmp_df$cohort == "HMF",]))
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    tmp_df_pcawg <- tmp_df$clonal_tmb_80_cutoff[tmp_df$cohort == "PCAWG"]/tmp_df$tmb[tmp_df$cohort == "PCAWG"]
+    tmp_df_hmf <- tmp_df$clonal_tmb_80_cutoff[tmp_df$cohort == "HMF"]/tmp_df$tmb[tmp_df$cohort == "HMF"]
+    res <- wilcox.test(tmp_df_pcawg, tmp_df_hmf)
+    # print(res$p.value)
+    if (res$p.value > 0.05){
+      ff[i,2] <- NA
+    }
+    ff[i,4:5] <- c(median(tmp_df_hmf, na.rm = T), median(tmp_df_pcawg, na.rm = T))
+  } else {
+    ff[i,4:5] <- rep(NA, times = 2)
+  }
+}
+
+
+
+
+ff$cancer_type <- factor(ff$cancer_type)
+ff$cancer_type_abb <- factor(ff$cancer_type_abb)
+
+
+
+plloott_median <- ff[!(is.na(ff$median_clona_met)) & !(is.na(ff$median_clona_prim)),] %>% ggplot(aes(x = 100*median_clona_prim, y = 100*median_clona_met, color = cancer_type_complete)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb), max.overlaps = 20) +
+  xlim(c(50,100)) +
+  xlab("primary median %") +
+  ylim(c(50,100)) +
+  ylab("Metastatsis median %") +
+  ggtitle("Percentage of Clonal mutations (softfilter PCAWG + strictfilter HMF)") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw() +
+  labs(caption = "SUBCL >= 0.8: subclonal \n SUBCL < 0.8: clonlal")
+
+
+
+
+
+purple_timing_cp <- purple_timing
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  tmp_df <- purple_timing_cp[purple_timing_cp$cancer_type == cancer_type & purple_timing_cp$subclonal_tmb_80_cutoff != 0,]
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    
+  } else {
+    purple_timing_cp <- purple_timing_cp[purple_timing_cp$cancer_type != cancer_type,]
+  }
+}
+
+
+purple_timing_cp$cancer_type <- factor(purple_timing_cp$cancer_type)
+
+
+
+
+plloott_box <- purple_timing_cp[purple_timing_cp$subclonal_tmb != 0,] %>% ggplot(aes(x = cohort, y = clonal_tmb_80_cutoff/tmb, color = cancer_type_code)) + facet_wrap(~ cancer_type_code) +
+  geom_boxplot() +
+  # ggrepel::geom_text_repel(aes(label = cancer_type_abb)) +
+  # xlim(c(50,100)) +
+  xlab("Cohort") +
+  stat_compare_means(comparisons = list(c('PCAWG', 'HMF')), method = "wilcox.test", label = "p.signif") +
+  ylab("Percentage of Clonal mutations (HMF Pipeline)") +
+  ylim(c(0,1.5)) +
+  ggtitle("Distribution of clonality percentage per cancer type (HMF Pipeline)") 
+
+
+
+com_plot <- ggarrange(plloott_mean, plloott_median, plloott_box,  ncol=3, common.legend = TRUE, legend="bottom")
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig18-clonality-softfilter-pcawg.png", height = 920, width = 1380)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig18-clonality-softfilter-pcawg.pdf", height = 14, width = 21)
+    print(com_plot)
+    dev.off()
+  }
+}
+
+
+# using binned data
+
+
+
+ff <- data.frame(cancer_type = character(59), cancer_type_abb = character(59), cancer_type_complete = character(59), mean_clona_met = numeric(59), mean_clona_prim = numeric(59))
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  cancer_type_complete <- paste0(cancer_type, " (", cancer_type_abb , ")")
+  tmp_df <- purple_timing[purple_timing$cancer_type == cancer_type & purple_timing$subclonal_tmb_80_cutoff != 0,]
+  
+  ff[i,1:3] <- c(cancer_type, cancer_type_abb, cancer_type_complete)
+  # print(cancer_type)
+  # print(head(tmp_df))
+  # print(nrow(tmp_df[tmp_df$cohort == "PCAWG",]))
+  # print(nrow(tmp_df[tmp_df$cohort == "HMF",]))
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    tmp_df_pcawg <- tmp_df$clonal[tmp_df$cohort == "PCAWG"]/tmp_df$tmb[tmp_df$cohort == "PCAWG"]
+    tmp_df_hmf <- tmp_df$clonal[tmp_df$cohort == "HMF"]/tmp_df$tmb[tmp_df$cohort == "HMF"]
+    res <- wilcox.test(tmp_df_pcawg, tmp_df_hmf)
+    # print(res$p.value)
+    if (res$p.value > 0.05){
+      ff[i,2] <- NA
+    }
+    ff[i,4:5] <- c(mean(tmp_df_hmf, na.rm = T), mean(tmp_df_pcawg, na.rm = T))
+  } else {
+    ff[i,4:5] <- rep(NA, times = 2)
+  }
+}
+
+
+
+
+ff$cancer_type <- factor(ff$cancer_type)
+ff$cancer_type_abb <- factor(ff$cancer_type_abb)
+
+
+
+plloott_mean_binned1 <- ff[!(is.na(ff$mean_clona_met)) & !(is.na(ff$mean_clona_prim)),] %>% ggplot(aes(x = 100*mean_clona_prim, y = 100*mean_clona_met, color = cancer_type_complete)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb), max.overlaps = 20) +
+  xlim(c(25,100)) +
+  xlab("primary mean %") +
+  ylim(c(25,100)) +
+  ylab("Metastatsis mean %") +
+  ggtitle("Percentage of Clonal mutations (softfilter PCAWG + strictfilter HMF)") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw() +
+  labs(caption = "SUBCL > 0: subclonal \n SUBCL = 0: clonlal")
+
+
+
+
+
+
+purple_timing_cp <- purple_timing
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  tmp_df <- purple_timing_cp[purple_timing_cp$cancer_type == cancer_type & purple_timing_cp$subclonal_tmb_80_cutoff != 0,]
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    
+  } else {
+    purple_timing_cp <- purple_timing_cp[purple_timing_cp$cancer_type != cancer_type,]
+  }
+}
+
+
+purple_timing_cp$cancer_type <- factor(purple_timing_cp$cancer_type)
+
+
+
+
+plloott_box_binned1 <- purple_timing_cp[purple_timing_cp$subclonal_tmb_80_cutoff != 0,] %>% ggplot(aes(x = cohort, y = clonal/tmb, color = cancer_type_code)) + facet_wrap(~ cancer_type_code) +
+  geom_boxplot() +
+  # ggrepel::geom_text_repel(aes(label = cancer_type_abb)) +
+  # xlim(c(50,100)) +
+  xlab("Cohort") +
+  stat_compare_means(comparisons = list(c('PCAWG', 'HMF')), method = "wilcox.test", label = "p.signif") +
+  ylab("Percentage of Clonal mutations (HMF Pipeline)") +
+  ylim(c(0,1.5)) +
+  ggtitle("Distribution of clonality percentage per cancer type") 
+
+
+
+com_plot <- ggarrange(plloott_mean_binned1, plloott_median_binned1, plloott_box_binned1,  ncol=3, common.legend = TRUE, legend="bottom")
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig18-1-clonality-softfilter-pcawg-binned.png", height = 920, width = 1380)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig18-1-clonality-softfilter-pcawg-binned.pdf", height = 14, width = 21)
+    print(com_plot)
+    dev.off()
+  }
+}
+
+
+
+
+
+# using binned data2
+
+
+
+ff <- data.frame(cancer_type = character(59), cancer_type_abb = character(59), cancer_type_complete = character(59), median_clona_met = numeric(59), median_clona_prim = numeric(59))
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  cancer_type_complete <- paste0(cancer_type, " (", cancer_type_abb , ")")
+  tmp_df <- purple_timing[purple_timing$cancer_type == cancer_type & purple_timing$subclonal_tmb_80_cutoff != 0,]
+  
+  ff[i,1:3] <- c(cancer_type, cancer_type_abb, cancer_type_complete)
+  # print(cancer_type)
+  # print(head(tmp_df))
+  # print(nrow(tmp_df[tmp_df$cohort == "PCAWG",]))
+  # print(nrow(tmp_df[tmp_df$cohort == "HMF",]))
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    tmp_df_pcawg <- (tmp_df$clonal[tmp_df$cohort == "PCAWG"] + tmp_df$probably_clonal[tmp_df$cohort == "PCAWG"])/tmp_df$tmb[tmp_df$cohort == "PCAWG"]
+    tmp_df_hmf <- (tmp_df$clonal[tmp_df$cohort == "HMF"] + tmp_df$probably_clonal[tmp_df$cohort == "HMF"])/tmp_df$tmb[tmp_df$cohort == "HMF"]
+    res <- wilcox.test(tmp_df_pcawg, tmp_df_hmf)
+    # print(res$p.value)
+    if (res$p.value > 0.05){
+      ff[i,2] <- NA
+    }
+    ff[i,4:5] <- c(median(tmp_df_hmf, na.rm = T), median(tmp_df_pcawg, na.rm = T))
+  } else {
+    ff[i,4:5] <- rep(NA, times = 2)
+  }
+}
+
+
+
+ff$cancer_type <- factor(ff$cancer_type)
+ff$cancer_type_abb <- factor(ff$cancer_type_abb)
+
+
+
+plloott_median_binned2 <- ff[!(is.na(ff$median_clona_met)) & !(is.na(ff$median_clona_prim)),] %>% ggplot(aes(x = 100*median_clona_prim, y = 100*median_clona_met, color = cancer_type_complete)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb), max.overlaps = 20) +
+  xlim(c(50,100)) +
+  xlab("primary median %") +
+  ylim(c(50,100)) +
+  ylab("Metastatsis median %") +
+  ggtitle("Percentage of Clonal mutations (softfilter PCAWG + strictfilter HMF)") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw() +
+  labs(caption = "SUBCL > quantile[50% of SUBCL != 0] & : subclonal \n SUBCL = 0 + SUBCL <= quantile[50% of SUBCL != 0]: clonlal")
+
+
+
+
+
+
+
+purple_timing_cp <- purple_timing
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  tmp_df <- purple_timing_cp[purple_timing_cp$cancer_type == cancer_type & purple_timing_cp$subclonal_tmb_80_cutoff != 0,]
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    
+  } else {
+    purple_timing_cp <- purple_timing_cp[purple_timing_cp$cancer_type != cancer_type,]
+  }
+}
+
+
+purple_timing_cp$cancer_type <- factor(purple_timing_cp$cancer_type)
+
+
+
+
+plloott_box_binned2 <- purple_timing_cp[purple_timing_cp$subclonal_tmb_80_cutoff != 0,] %>% ggplot(aes(x = cohort, y = (clonal+probably_clonal)/tmb, color = cancer_type_code)) + facet_wrap(~ cancer_type_code) +
+  geom_boxplot() +
+  # ggrepel::geom_text_repel(aes(label = cancer_type_abb)) +
+  # xlim(c(50,100)) +
+  xlab("Cohort") +
+  stat_compare_means(comparisons = list(c('PCAWG', 'HMF')), method = "wilcox.test", label = "p.signif") +
+  ylab("Percentage of Clonal mutations (HMF Pipeline)") +
+  ylim(c(0,1.5)) +
+  ggtitle("Distribution of clonality percentage per cancer type") 
+
+
+
+com_plot <- ggarrange(plloott_mean_binned2, plloott_median_binned2, plloott_box_binned2,  ncol=3, common.legend = TRUE, legend="bottom")
+
+
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig18-1-clonality-softfilter-pcawg-binned2.png", height = 920, width = 1380)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig18-1-clonality-softfilter-pcawg-binned2.pdf", height = 14, width = 21)
+    print(com_plot)
+    dev.off()
+  }
+}
 

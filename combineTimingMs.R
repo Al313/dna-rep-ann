@@ -865,13 +865,7 @@ if (dir.exists("/hpc/cuppen/")){
 # rownames(mt) <- as.character(1:(4*nrow(metadata_included)))
 # colnames(mt) <- c("sample_id", "timing", "info_exists", col.name)
 # 
-# 
-# 
-# 
-# 
-# 
 # first <- T
-# 
 # # nrow(metadata_included)
 # for (i in 1:nrow(metadata_included)){
 #   print(i)
@@ -881,6 +875,10 @@ if (dir.exists("/hpc/cuppen/")){
 #   timing_ms <- tryCatch(read.csv(file = paste0(wd, "timing-ms-combined/", sample_id, ".txt.gz"), stringsAsFactors = F, header = T, sep = "\t"), error=function(e) NULL)
 # 
 #   if (!is.null(timing_ms)){
+#     exposure_threshold <- names(table(timing_ms$ASSIGNED_SIG)[100*table(timing_ms$ASSIGNED_SIG)/nrow(timing_ms) >= 2.5]) ## Maybe when re-running next time set the threshold to 2 percent
+#     timing_ms <- timing_ms[timing_ms$ASSIGNED_SIG %in% exposure_threshold,]
+# 
+# 
 #     mm <- as.matrix(table(timing_ms$ASSIGNED_SIG, timing_ms$timing_class))
 # 
 #     m2 <- matrix(nrow = nrow(mm), ncol = length(all.cols), dimnames = list(NULL, all.cols))
@@ -943,18 +941,18 @@ if (dir.exists("/hpc/cuppen/")){
 # 
 # 
 # if (dir.exists("/hpc/cuppen/")){
-#   write.table(mt, file = gzfile("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz"), sep = "\t", quote = F, row.names = F)
+#   write.table(mt, file = gzfile("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df-2.5-percent-threshold.txt.gz"), sep = "\t", quote = F, row.names = F)
 # } else {
-#   write.table(mt, file = gzfile("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz"), sep = "\t", quote = F, row.names = F)
+#   write.table(mt, file = gzfile("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df-2.5-percent-threshold.txt.gz"), sep = "\t", quote = F, row.names = F)
 # }
 
 
 
-if (dir.exists("/hpc/cuppen/")){
-  ms_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
-} else {
-  ms_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
-}
+# if (dir.exists("/hpc/cuppen/")){
+#   ms_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+# } else {
+#   ms_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+# }
 
 
 
@@ -1049,3 +1047,86 @@ if (dir.exists("/hpc/cuppen/")){
 # } else {
 #   write.table(df_purple_clonality_binned, file = gzfile(paste0("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/all-purple-clonality-binned2.txt.gz")), sep = "\t", quote = F, row.names = F, col.names = T)
 # }
+
+
+
+
+
+
+#### clonality again
+
+# PCAWG purple calls using soft-filters and the old HMF calls
+
+
+# no_rows <- as.numeric(args[2]) - as.numeric(args[1]) + 1
+# 
+# purple_timing <- data.frame(sample_id = character(no_rows), clonal = numeric(no_rows), probably_clonal = numeric(no_rows), probably_subclonal = numeric(no_rows), subclonal = numeric(no_rows), clonal_tmb_80_cutoff = numeric(no_rows), subclonal_tmb_80_cutoff = numeric(no_rows))
+# 
+# for (i in 1:no_rows){
+#   print(i)
+#   
+#   j <- i + as.numeric(args[1]) - 1
+# 
+#   sample_id <- manifest$sample[j]
+#   print(sample_id)
+#   if (manifest$cohort[j] == "HMF") {
+#     if (dir.exists("/hpc/cuppen/")){
+#       path_to_vcf <- paste0(manifest[j, "dir"], manifest[j, "som_vcf"])
+#     } else {
+#       path_to_vcf <- paste0(local, manifest[j, "dir"], manifest[j, "som_vcf"])
+#     }
+#   } else if (manifest$cohort[j] == "PCAWG") {
+#     if (dir.exists("/hpc/cuppen/")){
+#       path_to_vcf <- paste0("/hpc/cuppen/shared_resources/PCAWG/pipeline5/per-donor/", sample_id, "-from-jar/purplesoft3.1/", sample_id, "T.purple.somatic.vcf.gz")
+#     } else {
+#       path_to_vcf <- paste0(local, "/hpc/cuppen/shared_resources/PCAWG/pipeline5/per-donor/", sample_id, "-from-jar/purplesoft3.1/", sample_id, "T.purple.somatic.vcf.gz")
+#     }
+#   }
+# 
+#   vcf <- variantsFromVcf(vcf.file = path_to_vcf,
+#                          merge.consecutive = T,
+#                          vcf.filter = "PASS",
+#                          vcf.fields = c("CHROM", "POS", "REF", "ALT", "FILTER", "INFO"))
+#   if (nrow(vcf) > 0){
+#     selelcted_info_fields <- getInfoValues(vcf$info, keys = c("TNC", "SUBCL"))
+# 
+#     selelcted_info_fields$SUBCL <- as.numeric(selelcted_info_fields$SUBCL)
+# 
+# 
+#     selelcted_info_fields$SUBCL[is.na(selelcted_info_fields$SUBCL)] <- 0
+# 
+#     percentiles <- quantile(selelcted_info_fields$SUBCL[selelcted_info_fields$SUBCL != 0], probs = c(0, 0.33, 0.66,1))
+# 
+#     tbl_subcl <- table(selelcted_info_fields$SUBCL)
+# 
+# 
+#     clonal <- sum(as.numeric(tbl_subcl["0"]))
+#     probably_clonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[2])]))
+#     probably_subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[2]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[3])]))
+#     subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[3]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[4])]))
+# 
+#     clonal_80 <- sum(selelcted_info_fields$SUBCL < 0.8)
+#     subclonal_80 <- sum(selelcted_info_fields$SUBCL >= 0.8)
+# 
+#     purple_timing[i,"sample_id"] <- sample_id
+#     purple_timing[i,2:7] <- c(clonal, probably_clonal, probably_subclonal, subclonal, clonal_80, subclonal_80)
+# 
+#   } else {
+#     purple_timing[i,"sample_id"] <- sample_id
+#     purple_timing[i,2:7] <- rep(NA, 6)
+#   }
+# }
+# 
+# 
+# write.table(purple_timing, file = gzfile(paste0(wd, "r-objects/tmp/", args[3], "-updated-purple-timing.txt.gz")), quote = F, row.names = F, sep = "\t", col.names = F)
+# 
+# ### Concatenating multiple text files into a single file in Bash
+# # zcat *.txt.gz >> ../all-updated-purple-timing.txt
+# 
+# purple_timing <- read.csv(file = paste0(wd, "r-objects/all-updated-purple-timing.txt.gz"), stringsAsFactors = F, header = F, sep = "\t")
+# colnames(purple_timing) <- c("sample_id", "clonal", "probably_clonal", "probably_subclonal", "subclonal", "clonal_tmb_80_cutoff", "subclonal_tmb_80_cutoff")
+# 
+# write.table(purple_timing, file = gzfile(paste0(wd, "r-objects/all-updated-purple-timing.txt.gz")), quote = F, row.names = F, sep = "\t")
+
+
+purple_timing <- read.csv(file = paste0(wd, "r-objects/all-updated-purple-timing.txt.gz"), stringsAsFactors = F, header = T, sep = "\t")
