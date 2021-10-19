@@ -73,6 +73,173 @@ metadata_included <- metadata[!(metadata$is_blacklisted),]
 
 metadata_included$tmb <- rowSums(metadata_included[,22:23])
 
+### Summarizing MS contribution
+
+
+
+# `%notin%` <- Negate(`%in%`)
+# 
+# 
+# cosmic_sigs2 <- vector()
+# 
+# all.cols <- c("clonal [NA]", "clonal [late]", "clonal [early]", "subclonal")
+# 
+# 
+# for (i in 1:nrow(metadata_included)){
+#   print(i)
+#   sample_id <- metadata_included$sample_id[i]
+#   print(sample_id)
+# 
+#   timing_ms <- tryCatch(read.csv(file = paste0(wd, "timing-ms-combined/", sample_id, ".txt.gz"), stringsAsFactors = F, header = T, sep = "\t"), error=function(e) NULL)
+# 
+#   if (!is.null(timing_ms)){
+#     mm <- as.matrix(table(timing_ms$ASSIGNED_SIG, timing_ms$timing_class))
+# 
+#     m2 <- matrix(nrow = nrow(mm), ncol = length(all.cols), dimnames = list(NULL, all.cols))
+#     m2[ , colnames(mm)] <- mm
+#     rownames(m2) <- rownames(mm)
+# 
+#     mm <- m2
+# 
+#     # cos_similarity_check <- as.numeric(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 4)) >= 85
+# 
+# 
+#     mm <- as.data.frame(mm)
+#     # mm <- mm[cos_similarity_check,]
+# 
+#     duplicated_check <- duplicated(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2))
+# 
+# 
+#     duplicates <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)[duplicated_check]
+# 
+#     if (length(duplicates) > 0) {
+#       for (j in 1:length(duplicates)){
+#         duplicate_indeces <- which(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2) == duplicates[j])
+#         mm <- rbind(mm, colSums(mm[duplicate_indeces,]))
+#         rownames(mm)[nrow(mm)] <- paste0(".", duplicates[j])
+#         mm <- mm[-duplicate_indeces,]
+#       }
+#     }
+# 
+# 
+#     rownames(mm) <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)
+# 
+# 
+#     add_to_cosmic <- rownames(mm)[rownames(mm) %notin% cosmic_sigs2]
+#     cosmic_sigs2 <- append(cosmic_sigs2, add_to_cosmic)
+#   }
+# }
+# 
+# if (dir.exists("/hpc/cuppen/")){
+#   write(cosmic_sigs2, file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs2.txt", sep = "\t")
+# } else {
+#   write(cosmic_sigs2, file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs2.txt", sep = "\t")
+# }
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  cosmic_sigs2 <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs2.txt", sep = "\t", header = F)
+} else {
+  cosmic_sigs2 <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/cosmic-sigs2.txt", sep = "\t", header = F)
+}
+
+
+
+
+
+
+
+
+
+
+# col.name <- cosmic_sigs2$V1
+# 
+# mt <- matrix(nrow = nrow(metadata_included), ncol = (2 + length(col.name)))
+# rownames(mt) <- as.character(1:(nrow(metadata_included)))
+# colnames(mt) <- c("sample_id", "info_exists", col.name)
+# 
+# 
+# for (i in 1:nrow(metadata_included)){
+# 
+#   print(i)
+#   sample_id <- metadata_included$sample_id[i]
+# 
+#   if (dir.exists("/hpc/cuppen/")){
+#     mut_signature_path <- paste0("/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
+#   } else {
+#     mut_signature_path <- paste0(local, "/hpc/cuppen/projects/P0025_PCAWG_HMF/passengers/processed/sigs_denovo/extractions/04_sigProfiler/sig_contrib/muts_assigned/", sample_id, ".txt.gz")
+#   }
+# 
+#   if (file.exists(mut_signature_path)){
+#     mut_signature_file <- T
+#     # mut_sig <- read.csv(file = mut_signature_path, header = T, sep = "\t", stringsAsFactors = F)
+#     mut_sig <- tryCatch(read.csv(file = mut_signature_path, header = T, sep = "\t", stringsAsFactors = F), error=function(e) NULL)
+#     if (is.null(mut_sig)) {
+#       mut_signature_file <- F
+#     }
+#   } else {
+#     mut_signature_file <- F
+#   }
+#   
+#   if (mut_signature_file) {
+#     mm <- as.matrix(table(mut_sig$assigned_sig))
+#     
+#     
+#     
+#     mm <- as.data.frame(mm)
+#     
+#     duplicated_check <- duplicated(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2))
+#     
+#     
+#     duplicates <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)[duplicated_check]
+#     
+#     if (length(duplicates) > 0) {
+#       for (j in 1:length(duplicates)){
+#         duplicate_indeces <- which(sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2) == duplicates[j])
+#         mm <- rbind(mm, sum(mm[duplicate_indeces,]))
+#         rownames(mm)[nrow(mm)] <- paste0(".", duplicates[j])
+#         mm <- mm[-duplicate_indeces,,drop = F]
+#       }
+#     }
+#     
+#     rownames(mm) <- sapply(str_split(rownames(mm), pattern = "\\."), "[[", 2)
+#     
+#     mm <- t(mm)
+#     
+#     mt[i,"sample_id"] <- sample_id
+#     mt[i,"info_exists"] <- T
+#     mt[i, colnames(mm)] <- as.numeric(mm)
+#     
+#     
+#   } else {
+#     mt[i,"sample_id"] <- sample_id
+#     mt[i,"info_exists"] <- F
+#   }
+# }
+# 
+# mt <- as.data.frame(mt)
+# mt$info_exists <- as.logical(mt$info_exists)
+# mt[,3:ncol(mt)] <- sapply(mt[,3:ncol(mt)], as.numeric)
+# 
+# 
+# 
+# if (dir.exists("/hpc/cuppen/")){
+#   write.table(mt, file = gzfile("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-contribution.txt.gz"), sep = "\t", quote = F, row.names = F)
+# } else {
+#   write.table(mt, file = gzfile("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-contribution.txt.gz"), sep = "\t", quote = F, row.names = F)
+# }
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  ms_contribution <- read.csv(file = gzfile("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-contribution.txt.gz"), sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  ms_contribution <- read.csv(file = gzfile("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-contribution.txt.gz"), sep = "\t", header = T, stringsAsFactors = F)
+}
+
+
+
 
 
 ### VCF annotated with MS and timing information:
@@ -527,84 +694,105 @@ if (dir.exists("/hpc/cuppen/")){
 # 
 # 
 # for (i in 1:nrow(metadata_included)){
-#   
+# 
 #   sample_id <- metadata_included$sample_id[i]
 #   print(i)
 #   print(sample_id)
-#   
+# 
 #   if (metadata_included$cohort[i] == "HMF"){
-#     
+# 
 #     cohort = "HMF"
 #     is_metastatic = metadata_included$is_metastatic[i]
-#     
+# 
 #     set_name <- hmf_meta$setName[hmf_meta$sampleId == sample_id]
 #     # print(set_name)
+# 
+#     
+#     ## Paths to mutationTimeR output for strictfiltered vcf calls
+#     # if (dir.exists("/hpc/cuppen/")){
+#     #   wgd_timing_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", set_name, "/", sample_id, ".WGD_time.tsv")
+#     # } else {
+#     #   wgd_timing_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", set_name, "/", sample_id, ".WGD_time.tsv")
+#     # }
+#     
+#     
+#     ## Paths to mutationTimeR output for softfiltered vcf calls
 #     
 #     if (dir.exists("/hpc/cuppen/")){
-#       wgd_timing_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", set_name, "/", sample_id, ".WGD_time.tsv")
+#       wgd_timing_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", sample_id, "/", sample_id, ".WGD_time.tsv")
 #     } else {
-#       wgd_timing_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", set_name, "/", sample_id, ".WGD_time.tsv")
+#       wgd_timing_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", sample_id, "/", sample_id, ".WGD_time.tsv")
 #     }
-#     
-#     
+# 
+# 
 #     if (file.exists(wgd_timing_path)){
 #       wgd_timing_file <- T
 #     } else {
 #       wgd_timing_file <- F
 #     }
-#     
+# 
 #   }
-#     
-#     
+# 
+# 
 #   if (metadata_included$cohort[i] == "PCAWG"){
-#     
+# 
 #     cohort = "PCAWG"
 #     is_metastatic = metadata_included$is_metastatic[i]
+# 
 #     
+#     ## Paths to mutationTimeR output for strictfiltered vcf calls
+#     # if (dir.exists("/hpc/cuppen/")){
+#     #   wgd_timing_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/timing/", sample_id, "/", sample_id, ".WGD_time.tsv")
+#     # } else {
+#     #   wgd_timing_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/timing/", sample_id, "/", sample_id, ".WGD_time.tsv")
+#     # }
+#     # 
+#     
+#     ## Paths to mutationTimeR output for softfiltered vcf calls (which is the same, so the previous files were over-written)
 #     if (dir.exists("/hpc/cuppen/")){
 #       wgd_timing_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/timing/", sample_id, "/", sample_id, ".WGD_time.tsv")
 #     } else {
 #       wgd_timing_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/timing/", sample_id, "/", sample_id, ".WGD_time.tsv")
 #     }
-#     
-#     
+# 
+# 
 #     if (file.exists(wgd_timing_path)){
 #       wgd_timing_file <- T
 #     } else {
 #       wgd_timing_file <- F
 #     }
-#     
+# 
 #   }
-#     
-#     
-#     
-#     
-#     
-#     
-#     
-#     
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
 #     if (wgd_timing_file){
 #       wgd_timing <- read.csv(file = wgd_timing_path, header = T, sep = "\t", stringsAsFactors = F)
 #       if (nrow(wgd_timing) > 1){
 #         print(paste0("Number of rows for ", sample_id, " is: ", nrow(wgd_timing)))
 #       }
-#       
+# 
 #       wgd_timing_df <- rbind(wgd_timing_df, cbind(wgd_timing[1,c(2,3,1)], cohort, is_metastatic))
-#       
+# 
 #     } else {
 #       wgd_timing_df <- rbind(wgd_timing_df, c(sample_id, NA, NA, cohort, is_metastatic))
 #     }
-#     
-#   
-#   
+# 
+# 
+# 
 # }
 # 
 # 
 # 
 # if (dir.exists("/hpc/cuppen/")){
-#   write.table(wgd_timing_df, file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/wgd-timing.txt", quote = F, row.names = F, sep = "\t")
+#   write.table(wgd_timing_df, file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/wgd-timing-updated.txt", quote = F, row.names = F, sep = "\t")
 # } else {
-#   write.table(wgd_timing_df, file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/wgd-timing.txt", quote = F, row.names = F, sep = "\t")
+#   write.table(wgd_timing_df, file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/wgd-timing-updated.txt", quote = F, row.names = F, sep = "\t")
 # }
 
 
@@ -615,12 +803,12 @@ if (dir.exists("/hpc/cuppen/")){
 
 
 if (dir.exists("/hpc/cuppen/")){
-  wgd_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/wgd-timing.txt", header = T, stringsAsFactors = F, sep = "\t")
+  wgd_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/wgd-timing-updated.txt", header = T, stringsAsFactors = F, sep = "\t")
 } else {
-  wgd_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/wgd-timing.txt", header = T, stringsAsFactors = F, sep = "\t")
+  wgd_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/wgd-timing-updated.txt", header = T, stringsAsFactors = F, sep = "\t")
 }
 
-wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_type")], by.x = "sample", by.y = "sample_id")
+# wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_type")], by.x = "sample", by.y = "sample_id")
 # str(wgd_timing_df)
 # sum(as.numeric(table(wgd_timing_df$cohort, useNA = "always")))
 # sum(as.numeric(table(wgd_timing_df$is_metastatic, useNA = "always")))
@@ -633,7 +821,7 @@ wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_
 
 #### Summarize mutational timing
 
-# 
+
 # global_timing_info <- data.frame(sample_id = character(7049), cohort = character(7049), early_clonal = numeric(7049), late_clonal = numeric(7049), na_clonal = numeric(7049), total_clonal = numeric(7049), subclonal = numeric(7049))
 # 
 # for (i in 1:nrow(metadata_included)){
@@ -948,11 +1136,11 @@ if (dir.exists("/hpc/cuppen/")){
 
 
 
-# if (dir.exists("/hpc/cuppen/")){
-#   ms_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
-# } else {
-#   ms_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
-# }
+if (dir.exists("/hpc/cuppen/")){
+  ms_timing_df <- read.csv(file = "/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  ms_timing_df <- read.csv(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-timing-df.txt.gz", sep = "\t", header = T, stringsAsFactors = F)
+}
 
 
 
@@ -1130,3 +1318,170 @@ if (dir.exists("/hpc/cuppen/")){
 
 
 purple_timing <- read.csv(file = paste0(wd, "r-objects/all-updated-purple-timing.txt.gz"), stringsAsFactors = F, header = T, sep = "\t")
+
+
+
+
+
+
+
+
+
+
+#### clonality yet again
+
+# PCAWG purple calls using (purplesoft3.2) and (DR-104-update4)
+
+
+# no_rows <- as.numeric(args[2]) - as.numeric(args[1]) + 1
+# 
+# purple_timing <- data.frame(sample_id = character(no_rows), clonal = numeric(no_rows), probably_clonal = numeric(no_rows), probably_subclonal = numeric(no_rows), subclonal = numeric(no_rows), clonal_tmb_80_cutoff = numeric(no_rows), subclonal_tmb_80_cutoff = numeric(no_rows))
+# 
+# for (i in 1:no_rows){
+#   print(i)
+# 
+#   j <- i + as.numeric(args[1]) - 1
+# 
+#   sample_id <- metadata_included$sample_id[j]
+#   print(sample_id)
+#   if (metadata_included$cohort[j] == "HMF") {
+#     if (dir.exists("/hpc/cuppen/")){
+#       path_to_vcf <- paste0("/hpc/cuppen/shared_resources/HMF_data/DR-104-update4/somatics/", sample_id, "/purple/", sample_id, ".purple.somatic.vcf.gz")
+#     } else {
+#       path_to_vcf <- paste0(local, "/hpc/cuppen/shared_resources/HMF_data/DR-104-update4/somatics/", sample_id, "/purple/", sample_id, ".purple.somatic.vcf.gz")
+#     }
+#   } else if (metadata_included$cohort[j] == "PCAWG") {
+#     if (dir.exists("/hpc/cuppen/")){
+#       path_to_vcf <- paste0("/hpc/cuppen/shared_resources/PCAWG/pipeline5/per-donor/", sample_id, "-from-jar/purplesoft3.2/", sample_id, "T.purple.somatic.vcf.gz")
+#     } else {
+#       path_to_vcf <- paste0(local, "/hpc/cuppen/shared_resources/PCAWG/pipeline5/per-donor/", sample_id, "-from-jar/purplesoft3.2/", sample_id, "T.purple.somatic.vcf.gz")
+#     }
+#   }
+# 
+#   vcf <- tryCatch(variantsFromVcf(vcf.file = path_to_vcf,
+#                          merge.consecutive = T,
+#                          vcf.filter = "PASS",
+#                          vcf.fields = c("CHROM", "POS", "REF", "ALT", "FILTER", "INFO")), error=function(e) NULL)
+#   if(!is.null(vcf)){
+#     if (nrow(vcf) > 0){
+#       selelcted_info_fields <- getInfoValues(vcf$info, keys = c("TNC", "SUBCL"))
+#   
+#       selelcted_info_fields$SUBCL <- as.numeric(selelcted_info_fields$SUBCL)
+#   
+#   
+#       selelcted_info_fields$SUBCL[is.na(selelcted_info_fields$SUBCL)] <- 0
+#   
+#       percentiles <- quantile(selelcted_info_fields$SUBCL[selelcted_info_fields$SUBCL != 0], probs = c(0, 0.33, 0.66,1))
+#   
+#       tbl_subcl <- table(selelcted_info_fields$SUBCL)
+#   
+#   
+#       clonal <- sum(as.numeric(tbl_subcl["0"]))
+#       probably_clonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[2])]))
+#       probably_subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[2]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[3])]))
+#       subclonal <- sum(as.numeric(tbl_subcl[-1][as.numeric(percentiles[3]) < as.numeric(names(tbl_subcl))[-1] &  as.numeric(names(tbl_subcl))[-1] <= as.numeric(percentiles[4])]))
+#   
+#       clonal_80 <- sum(selelcted_info_fields$SUBCL < 0.8)
+#       subclonal_80 <- sum(selelcted_info_fields$SUBCL >= 0.8)
+#   
+#       purple_timing[i,"sample_id"] <- sample_id
+#       purple_timing[i,2:7] <- c(clonal, probably_clonal, probably_subclonal, subclonal, clonal_80, subclonal_80)
+#   
+#     } else {
+#       purple_timing[i,"sample_id"] <- sample_id
+#       purple_timing[i,2:7] <- rep(NA, 6)
+#     }
+#   } else {
+#     purple_timing[i,"sample_id"] <- sample_id
+#     purple_timing[i,2:7] <- rep(NA, 6)
+#   }
+# }
+# 
+# 
+# write.table(purple_timing, file = gzfile(paste0(wd, "r-objects/tmp/", args[3], "-updated-purple-timing.txt.gz")), quote = F, row.names = F, sep = "\t", col.names = F)
+# 
+# ### Concatenating multiple text files into a single file in Bash
+# # zcat *.txt.gz >> ../all-final-update-purple-timing.txt
+# 
+# purple_timing <- read.csv(file = paste0(wd, "r-objects/all-final-update-purple-timing.txt"), stringsAsFactors = F, header = F, sep = "\t")
+# colnames(purple_timing) <- c("sample_id", "clonal", "probably_clonal", "probably_subclonal", "subclonal", "clonal_tmb_80_cutoff", "subclonal_tmb_80_cutoff")
+# 
+# write.table(purple_timing, file = gzfile(paste0(wd, "r-objects/all-final-update-purple-timing.txt.gz")), quote = F, row.names = F, sep = "\t")
+
+
+purple_timing <- read.csv(file = paste0(wd, "r-objects/all-final-update-purple-timing.txt.gz"), stringsAsFactors = F, header = T, sep = "\t")
+
+
+
+
+
+
+
+
+
+
+#### clonality yet again for timingr data
+
+# PCAWG purple calls using (purplesoft3.2) and (DR-104-update4)
+
+
+# no_rows <- as.numeric(args[2]) - as.numeric(args[1]) + 1
+# 
+# global_timing_info <- data.frame(sample_id = character(no_rows), cohort = character(no_rows), early_clonal = numeric(no_rows), late_clonal = numeric(no_rows), na_clonal = numeric(no_rows), total_clonal = numeric(no_rows), subclonal = numeric(no_rows))
+# 
+# for (i in 1:no_rows){
+#   print(i)
+# 
+#   j <- i + as.numeric(args[1]) - 1
+#   sample_id <- metadata_included$sample_id[j]
+#   print(sample_id)
+#   if (metadata_included$cohort[j] == "HMF") {
+#     if (dir.exists("/hpc/cuppen/")){
+#       file_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", sample_id, "/", sample_id, ".mutationaltiming.tsv.gz")
+#     } else {
+#       file_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/hmf/timing/", sample_id, "/", sample_id, ".mutationaltiming.tsv.gz")
+#     }
+#   } else if (metadata_included$cohort[j] == "PCAWG") {
+#     if (dir.exists("/hpc/cuppen/")){
+#       file_path <- paste0("/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/timing/", sample_id, "/", sample_id, ".mutationaltiming.tsv.gz")
+#     } else {
+#       file_path <- paste0(local, "/hpc/cuppen/projects/P0020_genetics_immune_escape/large_scale_primary_met/processed/pcawg/timing/", sample_id, "/", sample_id, ".mutationaltiming.tsv.gz")
+#     }
+#   }
+# 
+#   combined_df <- tryCatch(read.csv(file = file_path, header = T, sep = "\t", stringsAsFactors = F), error=function(e) NULL)
+# 
+# 
+# 
+# 
+#   if (!is.null(combined_df)){
+#     uu <- as.data.frame(table(combined_df$timing_class), stringsAsFactors = F)
+# 
+#     for (category in c("clonal [early]", "clonal [late]", "clonal [NA]", "subclonal")){
+#       if (category %notin% uu$Var1){
+#         uu <- rbind(uu, c(category, 0))
+#       }
+#     }
+#     uu$Freq <- as.integer(uu$Freq)
+#     global_timing_info[i,1:2] <- c(sample_id, metadata_included$cohort[j])
+#     global_timing_info[i,3:7] <- c(uu$Freq[uu$Var1 == "clonal [early]"], uu$Freq[uu$Var1 == "clonal [late]"], uu$Freq[uu$Var1 == "clonal [NA]"], sum(uu$Freq[uu$Var1 != "subclonal"]), uu$Freq[uu$Var1 == "subclonal"])
+#   } else {
+#     global_timing_info[i,1:2] <- c(sample_id, metadata_included$cohort[j])
+#     global_timing_info[i,3:7] <- rep(NA, times = 5)
+#   }
+# 
+# }
+# 
+# 
+# write.table(global_timing_info, file = gzfile(paste0(wd, "r-objects/tmp/", args[3], "-updated-mutatiotimer-timing.txt.gz")), quote = F, row.names = F, sep = "\t", col.names = F)
+# 
+# ### Concatenating multiple text files into a single file in Bash
+# # zcat *.txt.gz >> ../all-final-update-mutatiotimer-timing.txt
+# 
+# mutationtimer_timing <- read.csv(file = paste0(wd, "r-objects/all-final-update-mutatiotimer-timing.txt"), stringsAsFactors = F, header = F, sep = "\t")
+# colnames(mutationtimer_timing) <- c("sample_id", "cohort", "early_clonal", "late_clonal", "na_clonal", "total_clonal", "subclonal")
+# 
+# write.table(mutationtimer_timing, file = gzfile(paste0(wd, "r-objects/all-final-update-mutatiotimer-timing.txt.gz")), quote = F, row.names = F, sep = "\t")
+
+
+mutationtimer_timing <- read.csv(file = paste0(wd, "r-objects/all-final-update-mutatiotimer-timing.txt.gz"), stringsAsFactors = F, header = T, sep = "\t")

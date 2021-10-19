@@ -7,6 +7,8 @@
 
 library(ggplot2)
 library(ggrepel)
+library(gridExtra)
+library(gghighlight)
 library(ggpubr)
 library(magrittr)
 library(rcompanion)
@@ -17,6 +19,7 @@ library(plyr)
 library(miscTools)
 library(effsize)
 library(gggibbous)
+library(dplyr)
 
 
 
@@ -43,6 +46,7 @@ if (dir.exists("/hpc/cuppen/")){
 }
 
 
+
 if (dir.exists("/hpc/cuppen/")){
   metadata <- read.csv(file = paste0(wd, "external-files/cancer_types_HMF_PCAWG_2-metadata_25082021.tsv"), sep = "\t", header = T, stringsAsFactors = F)
 } else {
@@ -52,6 +56,7 @@ if (dir.exists("/hpc/cuppen/")){
 metadata_included <- metadata[!(metadata$is_blacklisted),]
 
 metadata_included$tmb <- rowSums(metadata_included[,22:23])
+
 
 
 # if (dir.exists("/hpc/cuppen/")){
@@ -75,16 +80,21 @@ global_timing_info_com <- global_timing_info_com[global_timing_info_com$sample_i
 
 
 if (dir.exists("/hpc/cuppen/")){
-  wgd_timing_df <- read.csv(file = paste0(wd, "r-objects/wgd-timing.txt"), sep = "\t", header = T, stringsAsFactors = F)
+  wgd_timing_df <- read.csv(file = paste0(wd, "r-objects/wgd-timing-updated.txt"), sep = "\t", header = T, stringsAsFactors = F)
 } else {
-  wgd_timing_df <- read.csv(file = paste0(wd, "r-objects/wgd-timing.txt"), sep = "\t", header = T, stringsAsFactors = F)
+  wgd_timing_df <- read.csv(file = paste0(wd, "r-objects/wgd-timing-updated.txt"), sep = "\t", header = T, stringsAsFactors = F)
 }
 
 wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_type", "whole_genome_duplication", "tmb", "is_hypermutated")], by.x = "sample", by.y = "sample_id")
+wgd_timing_df$cohort <- factor(wgd_timing_df$cohort)
 # ================================================================================================================================================
 # ================================================================================================================================================
 # WGD
 
+head(wgd_timing_df)
+any(is.na(wgd_timing_df$molecular_timing))
+sum(as.vector(table(wgd_timing_df$molecular_timing[wgd_timing_df$cancer_type == "Skin melanoma" & wgd_timing_df$cohort == "PCAWG" & wgd_timing_df$isWGD], useNA = "always")))
+table(wgd_timing_df$cancer_type[!is.na(wgd_timing_df$molecular_timing) & wgd_timing_df$isWGD], wgd_timing_df$cohort[!is.na(wgd_timing_df$molecular_timing) & wgd_timing_df$isWGD])
 # ************************************************************************************************************************************************
 # Fig1: WGD frequency between metastatic and primary per cancer type
 
@@ -148,8 +158,6 @@ per_cancer_type_wgd_metas_vs_prim_combined$annotation <- factor(per_cancer_type_
 per_cancer_type_wgd_metas_vs_prim_combined <- per_cancer_type_wgd_metas_vs_prim_combined[!is.na(per_cancer_type_wgd_metas_vs_prim_combined$odds_ratio),]
 
 
-s
-
 
 
 
@@ -184,12 +192,12 @@ wgd_prevalence_met_vs_pri_odds_plot <- per_cancer_type_wgd_metas_vs_prim_combine
 
 for (i in 1:2) {
   if (i == 1) {
-    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig1-odds-wgd-metas-vs-prim.png", height = 920, width = 1160)
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig1-odds-wgd-metas-vs-prim-updated.png", height = 920, width = 1160)
     print(wgd_prevalence_met_vs_pri_odds_plot)
     dev.off()
   }
   if (i == 2) {
-    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig1-odds-wgd-metas-vs-prim.pdf", height = 14, width = 17.5)
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig1-odds-wgd-metas-vs-prim-updated.pdf", height = 14, width = 17.5)
     print(wgd_prevalence_met_vs_pri_odds_plot)
     dev.off()
   }
@@ -227,33 +235,32 @@ for (i in 1:2) {
 
 for (cancer_type in cancer_types) {
   # print(cancer_type)
-  if (nrow(wgd_timing_df[wgd_timing_df$cancer_type == cancer_type & wgd_timing_df$isWGD & !is.na(wgd_timing_df$molecular_timing),]) < 5){
+  if (nrow(wgd_timing_df[wgd_timing_df$cancer_type == cancer_type & wgd_timing_df$isWGD & !is.na(wgd_timing_df$molecular_timing) & wgd_timing_df$cohort == "HMF",]) < 5 | nrow(wgd_timing_df[wgd_timing_df$cancer_type == cancer_type & wgd_timing_df$isWGD & !is.na(wgd_timing_df$molecular_timing) & wgd_timing_df$cohort == "PCAWG",]) < 5){
     wgd_timing_df <- wgd_timing_df[wgd_timing_df$cancer_type != cancer_type,]
   }
 }
 
-
-
+str(wgd_timing_df)
 
 wgd_timing_df$cancer_type <- factor(wgd_timing_df$cancer_type, levels = unique(wgd_timing_df$cancer_type))
 
-density_timing_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = is_metastatic, ..density..)) + #facet_wrap(~ cancer_type, scale = "free_y") +
+density_timing_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = cohort, ..density..)) + #facet_wrap(~ cancer_type, scale = "free_y") +
   geom_density(alpha = 0.5, adjust = 0.5) +
   ggtitle("density")
 
-# count_timing_per_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = is_metastatic, ..count..)) + #facet_wrap(~ cancer_type, scale = "free_y") +
+# count_timing_per_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = cohort, ..count..)) + #facet_wrap(~ cancer_type, scale = "free_y") +
 #   geom_density(alpha = 0.5, adjust = 0.5, stat = "density", position = "identity") +
 #   ggtitle("count")
 
 
-count_timing_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,]  %>% ggplot(aes(x = molecular_timing, fill = is_metastatic)) + #facet_wrap(~ cancer_type, scale = "free_y") +
+count_timing_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,]  %>% ggplot(aes(x = molecular_timing, fill = cohort)) + #facet_wrap(~ cancer_type, scale = "free_y") +
   geom_histogram(alpha = 0.5, bins = 20, position="identity")+
   ggtitle("count")
 
 
 
 
-scaled_timing_per_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = is_metastatic, ..scaled..)) + #facet_wrap(~ cancer_type, scale = "free_y") +
+scaled_timing_per_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = cohort, ..scaled..)) + #facet_wrap(~ cancer_type, scale = "free_y") +
   geom_density(alpha = 0.5, adjust = 0.5) +
   ggtitle("scaled")
 
@@ -263,12 +270,12 @@ scaled_timing_per_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing))
 
 for (i in 1:2) {
   if (i == 1) {
-    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig2-wgd-timing-plot-combined.png", height = 920, width = 460)
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig2-wgd-timing-plot-combined-updated.png", height = 920, width = 460)
     print(grid.arrange(count_timing_plot, density_timing_plot, scaled_timing_per_plot))
     dev.off()
   }
   if (i == 2) {
-    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig2-wgd-timing-plot-combined.pdf", height = 14, width = 7)
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig2-wgd-timing-plot-combined-updated.pdf", height = 14, width = 7)
     print(grid.arrange(count_timing_plot, density_timing_plot, scaled_timing_per_plot))
     dev.off()
   }
@@ -285,32 +292,32 @@ for (i in 1:2) {
 
 
 
-density_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = is_metastatic, ..density..)) + facet_wrap(~ cancer_type, scale = "free_y") +
+density_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = cohort, ..density..)) + facet_wrap(~ cancer_type, scale = "free_y") +
   geom_density(alpha = 0.5, adjust = 0.2) +
   ggtitle("density")
 
-# count_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = is_metastatic, ..count..)) + facet_wrap(~ cancer_type, scale = "free_y") +
+# count_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = cohort, ..count..)) + facet_wrap(~ cancer_type, scale = "free_y") +
 #   geom_density(alpha = 0.5, adjust = 0.2) +
 #   ggtitle("count")
 
 
-count_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,]  %>% ggplot(aes(x = molecular_timing, fill = is_metastatic)) + facet_wrap(~ cancer_type, scale = "free_y") +
+count_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,]  %>% ggplot(aes(x = molecular_timing, fill = cohort)) + facet_wrap(~ cancer_type, scale = "free_y") +
   geom_histogram(alpha = 0.5, bins = 20, position="identity")+
   ggtitle("count")
-
-
-
-
 
 
 options(scipen=999) 
 wgd_timing_df$Mann_whittney_p_value <- NA
 
+
+
 for (cancer_type in unique(wgd_timing_df$cancer_type)) {
   
   print(cancer_type)
-  dd <- tryCatch(wilcox.test(wgd_timing_df$molecular_timing[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD & !(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$cancer_type == cancer_type & wgd_timing_df$is_metastatic],  wgd_timing_df$molecular_timing[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD & !(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$cancer_type == cancer_type & !(wgd_timing_df$is_metastatic)]), error=function(e) NULL)
-  if (!is.null(dd)){
+  hmf_wgd_timing <- wgd_timing_df$molecular_timing[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD & !(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$cancer_type == cancer_type & wgd_timing_df$cohort == "HMF"]
+  pcawg_wgd_timing <- wgd_timing_df$molecular_timing[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD & !(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$cancer_type == cancer_type & wgd_timing_df$cohort == "PCAWG"]
+  dd <- tryCatch(wilcox.test(hmf_wgd_timing, pcawg_wgd_timing), error=function(e) NULL)
+  if (!is.null(dd) & length(hmf_wgd_timing) >= 2 & length(pcawg_wgd_timing) >= 2){
     print(dd$p.value)
     wgd_timing_df$Mann_whittney_p_value[wgd_timing_df$cancer_type == cancer_type] <- round(dd$p.value, digits = 5)
   } else {
@@ -329,25 +336,25 @@ text_df <- text_df[order(match(text_df$cancer_type, unique(wgd_timing_df$cancer_
 # text_df_n$Mann_whittney_p_value <- as.numeric(text_df_n$Mann_whittney_p_value)
 # text_df_n[text_df_n$Mann_whittney_p_value < 0.05,]
 
-scaled_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = is_metastatic, ..scaled..)) + facet_wrap(~ cancer_type) +
+scaled_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = molecular_timing, fill = cohort, ..scaled..)) + facet_wrap(~ cancer_type) +
   geom_density(alpha = 0.5, adjust = 0.2) +
   ylim(c(0,1.5)) +
   geom_text(data = text_df, mapping = aes(label = Mann_whittney_p_value, x = 0.2, y = 1.15), inherit.aes = F) +
   ggtitle("scaled")
 
 
-table(wgd_timing_df$molecular_timing[wgd_timing_df$cancer_type == "Osteosarcoma" & !(is.na(wgd_timing_df$molecular_timing)) &  wgd_timing_df$isWGD], wgd_timing_df$is_metastatic[wgd_timing_df$cancer_type == "Osteosarcoma" & !(is.na(wgd_timing_df$molecular_timing)) &  wgd_timing_df$isWGD])
+table(wgd_timing_df$molecular_timing[wgd_timing_df$cancer_type == "Osteosarcoma" & !(is.na(wgd_timing_df$molecular_timing)) &  wgd_timing_df$isWGD], wgd_timing_df$cohort[wgd_timing_df$cancer_type == "Osteosarcoma" & !(is.na(wgd_timing_df$molecular_timing)) &  wgd_timing_df$isWGD])
 
 
 
 for (i in 1:2) {
   if (i == 1) {
-    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig2-wgd-timing-per-cancer-type-plot-combined.png", height = 1380, width = 1160)
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig2-wgd-timing-per-cancer-type-plot-combined-updated.png", height = 1380, width = 1160)
     print(grid.arrange(count_timing_per_cancer_type_plot, density_timing_per_cancer_type_plot, scaled_timing_per_cancer_type_plot))
     dev.off()
   }
   if (i == 2) {
-    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig2-wgd-timing-per-cancer-type-plot-combined.pdf", height = 21, width = 17.5)
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig2-wgd-timing-per-cancer-type-plot-combined-updated.pdf", height = 21, width = 17.5)
     print(grid.arrange(count_timing_per_cancer_type_plot, density_timing_per_cancer_type_plot, scaled_timing_per_cancer_type_plot))
     dev.off()
   }
@@ -357,7 +364,7 @@ for (i in 1:2) {
 # ************************************************************************************************************************************************
 # Fig3: violin plot of wgd timing + mann-whittney test
 
-violin_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = is_metastatic, y = molecular_timing, fill = is_metastatic)) + facet_wrap(~ cancer_type, scale = "free_y") +
+violin_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecular_timing)) & wgd_timing_df$isWGD,] %>% ggplot(aes(x = cohort, y = molecular_timing, fill = cohort)) + facet_wrap(~ cancer_type, scale = "free_y") +
   geom_violin(alpha = 0.5) +
   ylim(c(0,1.5)) +
   geom_text(data = text_df, mapping = aes(label = Mann_whittney_p_value, x = 1.5, y = 1.25), inherit.aes = F) +
@@ -374,12 +381,12 @@ violin_timing_per_cancer_type_plot <- wgd_timing_df[!(is.na(wgd_timing_df$molecu
 
 for (i in 1:2) {
   if (i == 1) {
-    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig3-wgd-timing-per-cancer-type-violin-plot.png", height = 920, width = 920)
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig3-wgd-timing-per-cancer-type-violin-plot-updated.png", height = 920, width = 920)
     print(violin_timing_per_cancer_type_plot)
     dev.off()
   }
   if (i == 2) {
-    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig3-wgd-timing-per-cancer-type-violin-plot.pdf", height = 14, width = 14)
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig3-wgd-timing-per-cancer-type-violin-plot-updated.pdf", height = 14, width = 14)
     print(violin_timing_per_cancer_type_plot)
     dev.off()
   }
@@ -1478,7 +1485,7 @@ cancer_types <- unique(metadata_included$cancer_type)
 
 for (cancer_type in cancer_types){
   tmp_df <- wgd_timing_df[wgd_timing_df$whole_genome_duplication & !is.na(wgd_timing_df$molecular_timing) & wgd_timing_df$cancer_type == cancer_type & !(wgd_timing_df$is_hypermutated),]
-  if (nrow(tmp_df[tmp_df$is_metastatic,]) >= 5 & nrow(tmp_df[!(tmp_df$is_metastatic),]) >= 5){
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
     
   } else {
     wgd_timing_df_cpp <- wgd_timing_df_cpp[wgd_timing_df_cpp$cancer_type != cancer_type,]
@@ -1491,12 +1498,12 @@ options(scripen = 999)
 cancer_types <- as.character(unique(wgd_timing_df_cpp$cancer_type))
 
 
-corr_df_prim <- data.frame(cancer_type = character(19), cancer_type_abb = character(19), pearson_correlation = numeric(19), coefficient = numeric(19), p_val = numeric(19), adj_r_squared = numeric(19))
+corr_df_prim <- data.frame(cancer_type = character(18), cancer_type_abb = character(18), pearson_correlation = numeric(18), coefficient = numeric(18), p_val = numeric(18), adj_r_squared = numeric(18))
 for (i in 1:length(unique(wgd_timing_df_cpp$cancer_type))){
   cancer_type <- cancer_types[i]
   cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
   tmp_df <- wgd_timing_df_cpp[wgd_timing_df_cpp$whole_genome_duplication & wgd_timing_df_cpp$cancer_type == cancer_type & !is.na(wgd_timing_df_cpp$molecular_timing) & !(wgd_timing_df_cpp$is_hypermutated),]
-  tmp_df <- tmp_df[!(tmp_df$is_metastatic),]
+  tmp_df <- tmp_df[tmp_df$cohort == "PCAWG",]
   p_corr <- cor(tmp_df$molecular_timing,
                 log2(tmp_df$tmb))
   model <- lm(log2(tmb) ~ molecular_timing, data = tmp_df)
@@ -1547,7 +1554,7 @@ cancer_types <- unique(metadata_included$cancer_type)
 
 for (cancer_type in cancer_types){
   tmp_df <- wgd_timing_df[wgd_timing_df$whole_genome_duplication & !is.na(wgd_timing_df$molecular_timing) & wgd_timing_df$cancer_type == cancer_type & !(wgd_timing_df$is_hypermutated),]
-  if (nrow(tmp_df[tmp_df$is_metastatic,]) >= 5 & nrow(tmp_df[!(tmp_df$is_metastatic),]) >= 5){
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
     
   } else {
     wgd_timing_df_cpp <- wgd_timing_df_cpp[wgd_timing_df_cpp$cancer_type != cancer_type,]
@@ -1560,12 +1567,12 @@ options(scripen = 999)
 cancer_types <- as.character(unique(wgd_timing_df_cpp$cancer_type))
 
 
-corr_df_metas <- data.frame(cancer_type = character(19), cancer_type_abb = character(19), pearson_correlation = numeric(19), coefficient = numeric(19), p_val = numeric(19), adj_r_squared = numeric(19))
+corr_df_metas <- data.frame(cancer_type = character(18), cancer_type_abb = character(18), pearson_correlation = numeric(18), coefficient = numeric(18), p_val = numeric(18), adj_r_squared = numeric(18))
 for (i in 1:length(unique(wgd_timing_df_cpp$cancer_type))){
   cancer_type <- cancer_types[i]
   cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
   tmp_df <- wgd_timing_df_cpp[wgd_timing_df_cpp$whole_genome_duplication & wgd_timing_df_cpp$cancer_type == cancer_type & !is.na(wgd_timing_df_cpp$molecular_timing) & !(wgd_timing_df_cpp$is_hypermutated),]
-  tmp_df <- tmp_df[tmp_df$is_metastatic,]
+  tmp_df <- tmp_df[tmp_df$cohort == "HMF",]
   p_corr <- cor(tmp_df$molecular_timing,
                 log2(tmp_df$tmb))
   model <- lm(log2(tmb) ~ molecular_timing, data = tmp_df)
@@ -1629,6 +1636,103 @@ for (i in 1:2) {
 
 
 
+## Fig8.1.1 comparison between pcawg and hmf
+
+
+
+wgd_timing_df_cpp <- wgd_timing_df
+
+
+
+
+
+
+
+
+
+corr_df <- data.frame(cancer_type = character(18), cancer_type_abb = character(18), pearson_correlation = numeric(18), coefficient = numeric(18), p_val = numeric(18), adj_r_squared = numeric(18))
+
+i <- 1
+for (i in 1:length(unique(wgd_timing_df_cpp$cancer_type))){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  tmp_df <- wgd_timing_df_cpp[wgd_timing_df_cpp$whole_genome_duplication & wgd_timing_df_cpp$cancer_type == cancer_type & !is.na(wgd_timing_df_cpp$molecular_timing) & !(wgd_timing_df_cpp$is_hypermutated),]
+  tmp_df_prim <- tmp_df[tmp_df$cohort == "PCAWG",]
+  tmp_df_metas <- tmp_df[tmp_df$cohort == "HMF",]
+  p_corr <- cor(tmp_df$molecular_timing,
+                log2(tmp_df$tmb))
+  model <- lm(log2(tmb) ~ molecular_timing, data = tmp_df)
+  sum_model <- summary(model)
+  corr_df_metas[i,1:2] <- c(cancer_type, cancer_type_abb)
+  corr_df_metas[i,3:6] <- c(p_corr, sum_model$coefficients[2,1], sum_model$coefficients[2,4], sum_model$adj.r.squared)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+#
+
+wgd_timing_df_cpp_plot <- wgd_timing_df_cpp[wgd_timing_df_cpp$whole_genome_duplication & !is.na(wgd_timing_df_cpp$molecular_timing) & !(wgd_timing_df_cpp$is_hypermutated),]
+
+wgd_timing_df_cpp_plot$cohort <- factor(wgd_timing_df_cpp_plot$cohort)
+
+
+
+
+
+
+
+
+
+
+
+
+
+wgd_timing_tmb_box_plot_both <- wgd_timing_df_cpp_plot %>% ggplot(aes(x = molecular_timing, y = log2(tmb), color = cohort)) + facet_wrap(~ cancer_type) +
+  geom_point(size = 0.75, alpha = 0.5) +
+  scale_color_manual(values = c("red", "blue")) +
+  # ggrepel::geom_text_repel(data = corr_df_metas, x= 0.85, y = 25, aes(label = p_val_sig_code), size = 6) +
+  # ggrepel::geom_text_repel(data = corr_df_metas, x= 0.15, y = 4, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient)), size = 3) +
+  xlab("WGD Molecular Time") +
+  geom_smooth(data = wgd_timing_df_cpp_plot[wgd_timing_df_cpp_plot$cohort == "HMF", ], method='lm', formula= y~x, color = "red", se=F) +
+  geom_smooth(data = wgd_timing_df_cpp_plot[wgd_timing_df_cpp_plot$cohort == "PCAWG", ], method='lm', formula= y~x, color = "blue", se=F) +
+  ylab("TMB (log2)") +
+  ylim(c(5, 25)) +
+  labs(title = "WGD timing and TMB Between PCAWG vs HMF",
+       caption = "Hypermutated samples are excluded!")
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig8.1.1-tmb-timing-wgd-vs-nonwgd-scatter-plot-pcawg-vs-hmf.png", height = 920, width = 920)
+    print(wgd_timing_tmb_box_plot_both)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig8.1.1-tmb-timing-wgd-vs-nonwgd-scatter-plot-pcawg-vs-hmf.pdf", height = 14, width = 14)
+    print(wgd_timing_tmb_box_plot_both)
+    dev.off()
+  }
+}
+
+
+
+
+
+###################
+# Fig8.2: plotting the statistics of the model
+
+
+
 corr_df_prim$cancer_type <- paste0(corr_df_prim$cancer_type, " (", corr_df_prim$cancer_type_abb, ")")
 corr_df_prim$cancer_type <- factor(corr_df_prim$cancer_type)
 corr_df_prim$cancer_type_abb[which(corr_df_prim$p_val_sig_code == "n.s.")] <- NA
@@ -1682,6 +1786,578 @@ for (i in 1:2) {
     dev.off()
   }
 }
+
+
+
+
+# ************************************************************************************************************************************************
+# fig8.3 tmb per cancer type and wgd timing for NSCLC
+
+if (dir.exists("/hpc/cuppen/")){
+  ms_contribution <- read.csv(file = gzfile("/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-contribution.txt.gz"), sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  ms_contribution <- read.csv(file = gzfile("/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/r-objects/ms-contribution.txt.gz"), sep = "\t", header = T, stringsAsFactors = F)
+}
+
+ms_contribution_relative <- cbind(ms_contribution[,1:2], 100*ms_contribution[,3:ncol(ms_contribution)]/rowSums(ms_contribution[,3:ncol(ms_contribution)], na.rm = T))
+
+
+#  
+
+wgd_timing_df_nsclc <- wgd_timing_df[wgd_timing_df$cancer_type == "Non small cell lung cancer" & wgd_timing_df$isWGD & !is.na(wgd_timing_df$molecular_timing),]
+
+
+wgd_timing_df_nsclc <- merge(wgd_timing_df_nsclc, ms_contribution_relative[,-2], by.x = "sample", by.y = "sample_id")
+
+
+# threshold <- as.vector(quantile(wgd_timing_df_nsclc[wgd_timing_df_nsclc$isWGD,"SBS4"], probs = 0.5, na.rm = T))
+# 
+# threshold2 <- as.vector(quantile(wgd_timing_df_nsclc[wgd_timing_df_nsclc$isWGD,"DBS2"], probs = 0.5, na.rm = T))
+# 
+# wgd_timing_df_nsclc$smoker <- NA
+# wgd_timing_df_nsclc$smoker <- wgd_timing_df_nsclc$SBS4 >= threshold
+# wgd_timing_df_nsclc$smoker[is.na(wgd_timing_df_nsclc$smoker)] <- F
+# 
+# 
+# wgd_timing_df_nsclc$smoker2 <- NA
+# wgd_timing_df_nsclc$smoker2 <- wgd_timing_df_nsclc$DBS2 >= threshold2
+# wgd_timing_df_nsclc$smoker2[is.na(wgd_timing_df_nsclc$smoker2)] <- F
+# 
+# 
+# wgd_timing_df_nsclc$tobacco_exposed <- (wgd_timing_df_nsclc$smoker & wgd_timing_df_nsclc$smoker2)
+
+wgd_timing_df_nsclc$tobacco_exposed <- rowSums(wgd_timing_df_nsclc[,c("SBS4", "DBS2")], na.rm = T) >= as.vector(quantile(rowSums(wgd_timing_df_nsclc[,c("SBS4", "DBS2")], na.rm = T), probs = 0.5, na.rm = T))
+
+
+cancer_types <- unique(wgd_timing_df_nsclc$cancer_type)
+
+row_nr <- 2
+corr_df_nsclc_metas <- data.frame(cancer_type = character(row_nr), cancer_type_abb = character(row_nr), tobacco_exposed = logical(row_nr), pearson_correlation = numeric(row_nr), coefficient = numeric(row_nr), p_val = numeric(row_nr), adj_r_squared = numeric(row_nr))
+logic <- c(T,F)
+
+for (i in 1:row_nr){
+  cancer_type <- cancer_types[1]
+  print(i)
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  tmp_df <- wgd_timing_df_nsclc[wgd_timing_df_nsclc$tobacco_exposed == logic[i] & wgd_timing_df_nsclc$cohort == "HMF",]
+  p_corr <- cor(tmp_df$molecular_timing,
+                log2(tmp_df$tmb))
+  model <- lm(log2(tmb) ~ molecular_timing, data = tmp_df)
+  sum_model <- summary(model)
+  corr_df_nsclc_metas[i,1:2] <- c(cancer_type, cancer_type_abb)
+  corr_df_nsclc_metas[i,3] <- logic[i]
+  corr_df_nsclc_metas[i,4:7] <- c(p_corr, sum_model$coefficients[2,1], sum_model$coefficients[2,4], sum_model$adj.r.squared)
+}
+
+
+
+mod_summary_sign <- corr_df_nsclc_metas$p_val
+names(mod_summary_sign) <- corr_df_nsclc_metas$tobacco_exposed
+mod_summary_stars <- NA                             # Named vector with significance stars
+mod_summary_stars[mod_summary_sign < 0.1] <- "."
+mod_summary_stars[mod_summary_sign < 0.05] <- "*"
+mod_summary_stars[mod_summary_sign < 0.01] <- "**"
+mod_summary_stars[mod_summary_sign < 0.001] <- "***"
+mod_summary_stars[is.na(mod_summary_stars)] <- "n.s."
+
+names(mod_summary_stars) <- names(mod_summary_sign)
+corr_df_nsclc_metas$p_val_sig_code <- as.vector(mod_summary_stars)
+corr_df_nsclc_metas$pearson_correlation <- round(corr_df_nsclc_metas$pearson_correlation, digits = 2)
+corr_df_nsclc_metas$coefficient <- round(corr_df_nsclc_metas$coefficient, digits = 2)
+
+
+
+lung_plot_metas <- wgd_timing_df_nsclc[wgd_timing_df_nsclc$cohort == "HMF",] %>% ggplot(aes(x = molecular_timing, y = log2(tmb), color = tobacco_exposed)) +
+  geom_point() +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[corr_df_nsclc_metas$tobacco_exposed,], x= 0.75, y = 25, aes(label = p_val_sig_code), size = 10, color = "red") +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[corr_df_nsclc_metas$tobacco_exposed,], x= 0.25, y = 25, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient)), size = 5, color = "red") +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[!corr_df_nsclc_metas$tobacco_exposed,], x= 0.75, y = 5, aes(label = p_val_sig_code), size = 10, color = "blue") +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[!corr_df_nsclc_metas$tobacco_exposed,], x= 0.25, y = 5, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient)), size = 5, color = "blue") +
+  geom_smooth(data = wgd_timing_df_nsclc[wgd_timing_df_nsclc$tobacco_exposed, ], method='lm', formula= y~x, se = F) +
+  geom_smooth(data = wgd_timing_df_nsclc[!wgd_timing_df_nsclc$tobacco_exposed, ], method='lm', formula= y~x, se = F) +
+  scale_color_manual(values = c("blue", "red"))+
+  labs(title = "WGD Timing and TMB in Lung Cancer",
+       subtitle = "HMF Cohort",
+       caption = "   Tobacco_exposed criteria: sum(SBS4, DBS2) >= quantile(sum(SBS4, DBS2), prob = 0.5)")
+
+
+
+
+
+
+#
+
+
+wgd_timing_df_skcm <- wgd_timing_df[wgd_timing_df$cancer_type == "Skin melanoma" & wgd_timing_df$isWGD & !is.na(wgd_timing_df$molecular_timing),]
+
+wgd_timing_df_skcm <- merge(wgd_timing_df_skcm, ms_contribution_relative[,-2], by.x = "sample", by.y = "sample_id")
+
+str(wgd_timing_df_skcm)
+
+wgd_timing_df_skcm$uv_exposed <- rowSums(wgd_timing_df_skcm[,c("SBS7a", "SBS7b", "SBS7c")], na.rm = T) >=  as.vector(quantile(rowSums(wgd_timing_df_skcm[,c("SBS7a", "SBS7b", "SBS7c")], na.rm = T), probs = 0.5, na.rm = T))
+
+
+
+
+
+
+cancer_types <- unique(wgd_timing_df_skcm$cancer_type)
+
+row_nr <- 2
+corr_df_skcm_metas <- data.frame(cancer_type = character(row_nr), cancer_type_abb = character(row_nr), uv_exposed = logical(row_nr), pearson_correlation = numeric(row_nr), coefficient = numeric(row_nr), p_val = numeric(row_nr), adj_r_squared = numeric(row_nr))
+logic <- c(T,F)
+
+for (i in 1:row_nr){
+  cancer_type <- cancer_types[1]
+  print(i)
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  tmp_df <- wgd_timing_df_skcm[wgd_timing_df_skcm$uv_exposed == logic[i] & wgd_timing_df_skcm$cohort == "HMF",]
+  p_corr <- cor(tmp_df$molecular_timing,
+                log2(tmp_df$tmb))
+  model <- lm(log2(tmb) ~ molecular_timing, data = tmp_df)
+  sum_model <- summary(model)
+  corr_df_skcm_metas[i,1:2] <- c(cancer_type, cancer_type_abb)
+  corr_df_skcm_metas[i,3] <- logic[i]
+  corr_df_skcm_metas[i,4:7] <- c(p_corr, sum_model$coefficients[2,1], sum_model$coefficients[2,4], sum_model$adj.r.squared)
+}
+
+
+
+mod_summary_sign <- corr_df_skcm_metas$p_val
+names(mod_summary_sign) <- corr_df_skcm_metas$uv_exposed
+mod_summary_stars <- NA                             # Named vector with significance stars
+mod_summary_stars[mod_summary_sign < 0.1] <- "."
+mod_summary_stars[mod_summary_sign < 0.05] <- "*"
+mod_summary_stars[mod_summary_sign < 0.01] <- "**"
+mod_summary_stars[mod_summary_sign < 0.001] <- "***"
+mod_summary_stars[is.na(mod_summary_stars)] <- "n.s."
+
+names(mod_summary_stars) <- names(mod_summary_sign)
+corr_df_skcm_metas$p_val_sig_code <- as.vector(mod_summary_stars)
+corr_df_skcm_metas$pearson_correlation <- round(corr_df_skcm_metas$pearson_correlation, digits = 2)
+corr_df_skcm_metas$coefficient <- round(corr_df_skcm_metas$coefficient, digits = 2)
+
+
+
+
+
+
+
+skin_plot_metas <- wgd_timing_df_skcm[wgd_timing_df_skcm$cohort == "HMF",] %>% ggplot(aes(x = molecular_timing, y = log2(tmb), color = uv_exposed)) +
+  geom_point() +
+  ggrepel::geom_text_repel(data = corr_df_skcm_metas[corr_df_skcm_metas$uv_exposed,], x= 0.75, y = 25, aes(label = p_val_sig_code), size = 10, color = "red") +
+  ggrepel::geom_text_repel(data = corr_df_skcm_metas[corr_df_skcm_metas$uv_exposed,], x= 0.25, y = 25, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient)), size = 5, color = "red") +
+  ggrepel::geom_text_repel(data = corr_df_skcm_metas[!corr_df_skcm_metas$uv_exposed,], x= 0.75, y = 5, aes(label = p_val_sig_code), size = 10, color = "blue") +
+  ggrepel::geom_text_repel(data = corr_df_skcm_metas[!corr_df_skcm_metas$uv_exposed,], x= 0.25, y = 5, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient)), size = 5, color = "blue") +
+  geom_smooth(data = wgd_timing_df_skcm[wgd_timing_df_skcm$uv_exposed,], method='lm', formula= y~x, se = F) +
+  geom_smooth(data = wgd_timing_df_skcm[!wgd_timing_df_skcm$uv_exposed,], method='lm', formula= y~x, se = F) +
+  scale_color_manual(values = c("blue", "red")) +
+  labs(title = "WGD Timing and TMB in Skin Cancer",
+       subtitle = "HMF Cohort",
+       caption = "   UV_exposed criteria: sum(SBS7a, SBS7b, SBS7c) >= quantile(sum(SBS7a, SBS7b, SBS7c), prob = 0.5)")
+
+
+
+com_plot_lung <- ggarrange(lung_plot_prim, lung_plot_metas, ncol = 1, common.legend = T, legend = "right")
+com_plot_skin <- ggarrange(skin_plot_prim, skin_plot_metas, ncol = 1, common.legend = T, legend = "right")
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig8.3-tmb-timing-wgd-vs-nonwgd-scatter-plot-lung.png", height = 960)
+    print(com_plot_lung)
+    dev.off()
+    
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig8.3-tmb-timing-wgd-vs-nonwgd-scatter-plot-skin.png", height = 960)
+    print(com_plot_skin)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig8.3-tmb-timing-wgd-vs-nonwgd-scatter-plot-lung.pdf", height = 14)
+    print(com_plot_lung)
+    dev.off()
+    
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig8.3-tmb-timing-wgd-vs-nonwgd-scatter-plot-skin.pdf", height = 14)
+    print(com_plot_skin)
+    dev.off()
+  }
+}
+
+
+
+#################################
+# Fig8.3.1
+
+lung_box_HMF <- wgd_timing_df_nsclc[wgd_timing_df_nsclc$cohort == "HMF",] %>% ggplot(aes(x = tobacco_exposed, y = molecular_timing, fill = tobacco_exposed)) +
+  geom_boxplot() +
+  stat_compare_means(comparisons = list(c('FALSE', 'TRUE')), method = "wilcox.test", label = "p.signif") +
+  ylab("WGD Molecular Timing") +
+  xlab("Tobacco Exposure") +
+  labs(title = "Comparison of Tobacco Exposure and WGD Timing",
+       subtitle = "HMF Cohort") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+        plot.caption = element_text(hjust = 0.5, size = 5, face = "italic"))
+
+
+
+skin_box_HMF <- wgd_timing_df_skcm[wgd_timing_df_skcm$cohort == "HMF",] %>% ggplot(aes(x = uv_exposed, y = molecular_timing, fill = uv_exposed)) +
+  geom_boxplot() +
+  stat_compare_means(comparisons = list(c('FALSE', 'TRUE')), method = "wilcox.test", label = "p.signif") +
+  ylab("WGD Molecular Timing") +
+  xlab("UV Exposure") +
+  labs(title = "Comparison of UV Exposure and WGD Timing",
+       subtitle = "HMF Cohort") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+        plot.caption = element_text(hjust = 0.5, size = 5, face = "italic"))
+
+
+
+com_box_plot_lung <- ggarrange(lung_box_PCAWG, lung_box_HMF, ncol = 2, common.legend = T, legend = "bottom")
+com_box_plot_skin <- ggarrange(skin_box_PCAWG, skin_box_HMF, ncol = 2, common.legend = T, legend = "bottom")
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig8.3.1-tmb-timing-wgd-vs-nonwgd-box-plot-lung.png")
+    print(com_box_plot_lung)
+    dev.off()
+    
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig8.3.1-tmb-timing-wgd-vs-nonwgd-box-plot-skin.png")
+    print(com_box_plot_skin)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig8.3.1-tmb-timing-wgd-vs-nonwgd-box-plot-lung.pdf")
+    print(com_box_plot_lung)
+    dev.off()
+    
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig8.3.1-tmb-timing-wgd-vs-nonwgd-box-plot-skin.pdf")
+    print(com_box_plot_skin)
+    dev.off()
+  }
+}
+
+
+
+#################################
+# fig8.3.2 using smoking records
+
+
+
+if (dir.exists("/hpc/cuppen/")){
+  smoking_record <- read.csv(file = paste0(wd, "external-files/smoking-history-20211014.tsv"), sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  smoking_record <- read.csv(file = paste0(wd, "external-files/smoking-history-20211014.tsv"), sep = "\t", header = T, stringsAsFactors = F)
+}
+
+
+wgd_timing_df_nsclc <- merge(wgd_timing_df_nsclc, smoking_record[,c(4, 19)], by.x = "sample", by.y = "sample_id")
+wgd_timing_df_nsclc <- wgd_timing_df_nsclc[!is.na(wgd_timing_df_nsclc$smoking_history),]
+wgd_timing_df_nsclc$smoking_history <- factor(wgd_timing_df_nsclc$smoking_history, levels = c("Current", "Former", "Never"))
+# table(wgd_timing_df_nsclc$smoking_history, wgd_timing_df_nsclc$smoking_history, useNA = "always")
+
+
+
+
+
+row_nr <- 3
+corr_df_nsclc_metas <- data.frame(cancer_type = character(row_nr), cancer_type_abb = character(row_nr), smoking_history = logical(row_nr), pearson_correlation = numeric(row_nr), coefficient = numeric(row_nr), p_val = numeric(row_nr), adj_r_squared = numeric(row_nr))
+smoking_stat <- c("Current", "Former", "Never")
+
+for (i in 1:row_nr){
+  cancer_type <- cancer_types[1]
+  print(i)
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  tmp_df <- wgd_timing_df_nsclc[wgd_timing_df_nsclc$smoking_history == smoking_stat[i] & wgd_timing_df_nsclc$cohort == "HMF",]
+  p_corr <- cor(tmp_df$molecular_timing,
+                log2(tmp_df$tmb))
+  model <- lm(log2(tmb) ~ molecular_timing, data = tmp_df)
+  sum_model <- summary(model)
+  corr_df_nsclc_metas[i,1:2] <- c(cancer_type, cancer_type_abb)
+  corr_df_nsclc_metas[i,3] <- smoking_stat[i]
+  corr_df_nsclc_metas[i,4:7] <- c(p_corr, sum_model$coefficients[2,1], sum_model$coefficients[2,4], sum_model$adj.r.squared)
+}
+
+
+
+mod_summary_sign <- corr_df_nsclc_metas$p_val
+names(mod_summary_sign) <- corr_df_nsclc_metas$smoking_history
+mod_summary_stars <- NA                             # Named vector with significance stars
+mod_summary_stars[mod_summary_sign < 0.1] <- "."
+mod_summary_stars[mod_summary_sign < 0.05] <- "*"
+mod_summary_stars[mod_summary_sign < 0.01] <- "**"
+mod_summary_stars[mod_summary_sign < 0.001] <- "***"
+mod_summary_stars[is.na(mod_summary_stars)] <- "n.s."
+
+names(mod_summary_stars) <- names(mod_summary_sign)
+corr_df_nsclc_metas$p_val_sig_code <- as.vector(mod_summary_stars)
+corr_df_nsclc_metas$pearson_correlation <- round(corr_df_nsclc_metas$pearson_correlation, digits = 2)
+corr_df_nsclc_metas$coefficient <- round(corr_df_nsclc_metas$coefficient, digits = 2)
+
+corr_df_nsclc_metas$smoking_history <- factor(corr_df_nsclc_metas$smoking_history, levels = c("Current", "Former", "Never"))
+
+
+lung_plot_metas <- wgd_timing_df_nsclc[wgd_timing_df_nsclc$cohort == "HMF",] %>% ggplot(aes(x = molecular_timing, y = log2(tmb), color = smoking_history)) +
+  geom_point() +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[corr_df_nsclc_metas$smoking_history == "Current",], x= 0.5, y = 25, aes(label = p_val_sig_code, color = smoking_history), size = 10) +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[corr_df_nsclc_metas$smoking_history == "Current",], x= 0.2, y = 25, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient), color = smoking_history), size = 5) +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[corr_df_nsclc_metas$smoking_history == "Former",], x= 0.5, y = 18, aes(label = p_val_sig_code, color = smoking_history), size = 10,) +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[corr_df_nsclc_metas$smoking_history == "Former",], x= 0.2, y = 18, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient), color = smoking_history), size = 5) +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[corr_df_nsclc_metas$smoking_history == "Never",], x= 0.5, y = 10, aes(label = p_val_sig_code, color = smoking_history), size = 10) +
+  ggrepel::geom_text_repel(data = corr_df_nsclc_metas[corr_df_nsclc_metas$smoking_history == "Never",], x= 0.2, y = 10, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient), color = smoking_history), size = 5) +
+  geom_smooth(data = wgd_timing_df_nsclc[wgd_timing_df_nsclc$smoking_history == "Current", ], method='lm', formula= y~x, se = F) +
+  geom_smooth(data = wgd_timing_df_nsclc[wgd_timing_df_nsclc$smoking_history == "Former", ], method='lm', formula= y~x, se = F) +
+  geom_smooth(data = wgd_timing_df_nsclc[wgd_timing_df_nsclc$smoking_history == "Never", ], method='lm', formula= y~x, se = F) +
+  scale_color_manual(values = c("blue", "orange", "red"))+
+  labs(title = "WGD Timing and TMB in Lung Cancer (using smoking history)",
+       subtitle = "HMF Cohort",
+       caption = "   smoking_history criteria: sum(SBS4, DBS2) >= quantile(sum(SBS4, DBS2), prob = 0.5)")
+
+
+
+
+
+
+my_comparisons <- list( c("Current", "Former"), c("Current", "Never"), c("Former", "Never") )
+
+lung_with_smoking_record_box_HMF <- wgd_timing_df_nsclc[wgd_timing_df_nsclc$cohort == "HMF" & !is.na(wgd_timing_df_nsclc$smoking_history),] %>% ggplot(aes(x = smoking_history, y = molecular_timing, fill = smoking_history)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("blue", "orange", "red"))+
+  stat_compare_means(comparisons = my_comparisons, method = "wilcox.test", label = "p.signif") +
+  ylab("WGD Molecular Timing") +
+  xlab("Smoking Record") +
+  labs(title = "Comparison of Tobacco Exposure and WGD Timing (using smoking history)",
+       subtitle = "HMF Cohort") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+        plot.caption = element_text(hjust = 0.5, size = 5, face = "italic"))
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig8.3.2-tmb-wgd-timing-smoking-history-plot-lung.png")
+    print(lung_plot_metas)
+    dev.off()
+    
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig8.3.2-tmb-wgd-timing-smoking-history-box-plot-lung.png")
+    print(lung_with_smoking_record_box_HMF)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig8.3.2-tmb-wgd-timing-smoking-history-plot-lung.pdf")
+    print(lung_plot_metas)
+    dev.off()
+    
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig8.3.2-tmb-wgd-timing-smoking-history-box-plot-lung.pdf")
+    print(lung_with_smoking_record_box_HMF)
+    dev.off()
+  }
+}
+
+# ************************************************************************************************************************************************
+# fig8.4 SV frequency per cancer type and wgd timing 
+
+
+if (dir.exists("/hpc/cuppen/")){
+  metadata <- read.csv(file = paste0(wd, "external-files/cancer_types_HMF_PCAWG_2-metadata-13102021.tsv"), sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  metadata <- read.csv(file = paste0(wd, "external-files/cancer_types_HMF_PCAWG_2-metadata-13102021.tsv"), sep = "\t", header = T, stringsAsFactors = F)
+}
+
+
+
+metadata_included <- metadata[!(metadata$is_blacklisted),]
+
+metadata_included[,23:32] <- sapply(metadata_included[,23:32], as.numeric)
+
+
+metadata_included$whole_genome_duplication <- as.logical(metadata_included$whole_genome_duplication)
+metadata_included$tmb <- rowSums(metadata_included[,25:32])
+
+
+if (dir.exists("/hpc/cuppen/")){
+  wgd_timing_df <- read.csv(file = paste0(wd, "r-objects/wgd-timing-updated.txt"), sep = "\t", header = T, stringsAsFactors = F)
+} else {
+  wgd_timing_df <- read.csv(file = paste0(wd, "r-objects/wgd-timing-updated.txt"), sep = "\t", header = T, stringsAsFactors = F)
+}
+
+wgd_timing_df <- merge(wgd_timing_df, metadata_included[,c("sample_id", "cancer_type", "whole_genome_duplication", "tmb_sv", "is_hypermutated", "tmb")], by.x = "sample", by.y = "sample_id")
+wgd_timing_df$cohort <- factor(wgd_timing_df$cohort)
+
+
+
+
+
+
+
+
+
+wgd_timing_df_cpp <- wgd_timing_df
+cancer_types <- unique(metadata_included$cancer_type)
+
+for (cancer_type in cancer_types){
+  tmp_df <- wgd_timing_df[wgd_timing_df$isWGD & !is.na(wgd_timing_df$molecular_timing) & wgd_timing_df$cancer_type == cancer_type & !(wgd_timing_df$is_hypermutated),]
+  if (nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5){
+    
+  } else {
+    wgd_timing_df_cpp <- wgd_timing_df_cpp[wgd_timing_df_cpp$cancer_type != cancer_type,]
+  }
+}
+
+wgd_timing_df_cpp$cancer_type <- factor(wgd_timing_df_cpp$cancer_type)
+
+options(scripen = 999)
+cancer_types <- as.character(unique(wgd_timing_df_cpp$cancer_type))
+
+
+row_nr <- length(unique(wgd_timing_df_cpp$cancer_type))
+corr_df_prim <- data.frame(cancer_type = character(row_nr), cancer_type_abb = character(row_nr), pearson_correlation = numeric(row_nr), coefficient = numeric(row_nr), p_val = numeric(row_nr), adj_r_squared = numeric(row_nr))
+
+for (i in 1:row_nr){
+  cancer_type <- cancer_types[i]
+  print(i)
+  print(cancer_type)
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  tmp_df <- wgd_timing_df_cpp[wgd_timing_df_cpp$isWGD & wgd_timing_df_cpp$cancer_type == cancer_type & !is.na(wgd_timing_df_cpp$molecular_timing) & !(wgd_timing_df_cpp$is_hypermutated) & wgd_timing_df_cpp$tmb_sv != 0,]
+  tmp_df <- tmp_df[tmp_df$cohort == "PCAWG",]
+  p_corr <- cor(tmp_df$molecular_timing,
+                log2(tmp_df$tmb_sv))
+  model <- lm(log2(tmb_sv) ~ molecular_timing, data = tmp_df)
+  sum_model <- summary(model)
+  corr_df_prim[i,1:2] <- c(cancer_type, cancer_type_abb)
+  corr_df_prim[i,3:6] <- c(p_corr, sum_model$coefficients[2,1], sum_model$coefficients[2,4], sum_model$adj.r.squared)
+}
+
+mod_summary_sign <- corr_df_prim$p_val
+names(mod_summary_sign) <- corr_df_prim$cancer_type
+mod_summary_stars <- NA                             # Named vector with significance stars
+mod_summary_stars[mod_summary_sign < 0.1] <- "."
+mod_summary_stars[mod_summary_sign < 0.05] <- "*"
+mod_summary_stars[mod_summary_sign < 0.01] <- "**"
+mod_summary_stars[mod_summary_sign < 0.001] <- "***"
+mod_summary_stars[is.na(mod_summary_stars)] <- "n.s."
+
+names(mod_summary_stars) <- names(mod_summary_sign)
+corr_df_prim$p_val_sig_code <- as.vector(mod_summary_stars)
+corr_df_prim$pearson_correlation <- round(corr_df_prim$pearson_correlation, digits = 2)
+corr_df_prim$coefficient <- round(corr_df_prim$coefficient, digits = 2)
+
+
+
+wgd_timing_tmb_sv_box_plot_prim <- wgd_timing_df_cpp[wgd_timing_df_cpp$isWGD & !is.na(wgd_timing_df_cpp$molecular_timing) & !(wgd_timing_df_cpp$is_hypermutated) & wgd_timing_df_cpp$cohort == "PCAWG",] %>% ggplot(aes(x = molecular_timing, y = log2(tmb_sv))) + facet_wrap(~ cancer_type) +
+  geom_point(size = 0.75) +
+  ggrepel::geom_text_repel(data = corr_df_prim, x= 0.85, y = 20, aes(label = p_val_sig_code), size = 6) +
+  ggrepel::geom_text_repel(data = corr_df_prim, x= 0.15, y = 0, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient)), size = 3) +
+  xlab("WGD Molecular Time") +
+  geom_smooth(method='lm', formula= y~x, color = "red", se=F) +
+  ylab("tmb_sv (log2)") +
+  ylim(c(0, 20)) +
+  labs(title = "Relationship of WGD timing and tmb_sv",
+       subtitle = "PCAWG Cohort",
+       caption = "Hypermutated samples are excluded!")
+
+
+
+
+
+
+
+
+
+
+wgd_timing_df_cpp <- wgd_timing_df
+cancer_types <- unique(metadata_included$cancer_type)
+
+for (cancer_type in cancer_types){
+  tmp_df <- wgd_timing_df[wgd_timing_df$isWGD & !is.na(wgd_timing_df$molecular_timing) & wgd_timing_df$cancer_type == cancer_type & !(wgd_timing_df$is_hypermutated),]
+  if (nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5){
+    
+  } else {
+    wgd_timing_df_cpp <- wgd_timing_df_cpp[wgd_timing_df_cpp$cancer_type != cancer_type,]
+  }
+}
+
+wgd_timing_df_cpp$cancer_type <- factor(wgd_timing_df_cpp$cancer_type)
+
+options(scripen = 999)
+cancer_types <- as.character(unique(wgd_timing_df_cpp$cancer_type))
+
+
+
+row_nr <- length(unique(wgd_timing_df_cpp$cancer_type))
+corr_df_metas <- data.frame(cancer_type = character(row_nr), cancer_type_abb = character(row_nr), pearson_correlation = numeric(row_nr), coefficient = numeric(row_nr), p_val = numeric(row_nr), adj_r_squared = numeric(row_nr))
+for (i in 1:row_nr){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  tmp_df <- wgd_timing_df_cpp[wgd_timing_df_cpp$isWGD & wgd_timing_df_cpp$cancer_type == cancer_type & !is.na(wgd_timing_df_cpp$molecular_timing) & !(wgd_timing_df_cpp$is_hypermutated) & wgd_timing_df_cpp$tmb_sv != 0,]
+  tmp_df <- tmp_df[tmp_df$cohort == "HMF",]
+  p_corr <- cor(tmp_df$molecular_timing,
+                log2(tmp_df$tmb_sv))
+  model <- lm(log2(tmb_sv) ~ molecular_timing, data = tmp_df)
+  sum_model <- summary(model)
+  corr_df_metas[i,1:2] <- c(cancer_type, cancer_type_abb)
+  corr_df_metas[i,3:6] <- c(p_corr, sum_model$coefficients[2,1], sum_model$coefficients[2,4], sum_model$adj.r.squared)
+}
+
+mod_summary_sign <- corr_df_metas$p_val
+names(mod_summary_sign) <- corr_df_metas$cancer_type
+mod_summary_stars <- NA                             # Named vector with significance stars
+mod_summary_stars[mod_summary_sign < 0.1] <- "."
+mod_summary_stars[mod_summary_sign < 0.05] <- "*"
+mod_summary_stars[mod_summary_sign < 0.01] <- "**"
+mod_summary_stars[mod_summary_sign < 0.001] <- "***"
+mod_summary_stars[is.na(mod_summary_stars)] <- "n.s."
+
+names(mod_summary_stars) <- names(mod_summary_sign)
+corr_df_metas$p_val_sig_code <- as.vector(mod_summary_stars)
+corr_df_metas$pearson_correlation <- round(corr_df_metas$pearson_correlation, digits = 2)
+corr_df_metas$coefficient <- round(corr_df_metas$coefficient, digits = 2)
+
+
+
+wgd_timing_tmb_sv_box_plot_metas <- wgd_timing_df_cpp[wgd_timing_df_cpp$isWGD & !is.na(wgd_timing_df_cpp$molecular_timing) & !(wgd_timing_df_cpp$is_hypermutated) & wgd_timing_df_cpp$cohort == "HMF",] %>% ggplot(aes(x = molecular_timing, y = log2(tmb_sv))) + facet_wrap(~ cancer_type) +
+  geom_point(size = 0.75) +
+  ggrepel::geom_text_repel(data = corr_df_metas, x= 0.85, y = 20, aes(label = p_val_sig_code), size = 6) +
+  ggrepel::geom_text_repel(data = corr_df_metas, x= 0.15, y = 0, aes(label = paste("Pearson corr.:", pearson_correlation, ", Line slope:", coefficient)), size = 3) +
+  xlab("WGD Molecular Time") +
+  geom_smooth(method='lm', formula= y~x, color = "red", se=F) +
+  ylab("tmb_sv (log2)") +
+  ylim(c(0, 20)) +
+  labs(title = "Relationship of WGD timing and tmb_sv",
+       subtitle = "HMF Cohort",
+       caption = "Hypermutated samples are excluded!")
+
+
+
+
+
+
+com_plot <- ggarrange(wgd_timing_tmb_sv_box_plot_prim, wgd_timing_tmb_sv_box_plot_metas, nrow = 2)
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig8.4-tmb_sv-timing-wgd-vs-nonwgd-scatter-plot-per-cohort.png", height = 920, width = 920)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig8.4-tmb_sv-timing-wgd-vs-nonwgd-scatter-plot-per-cohort.pdf", height = 14, width = 14)
+    print(com_plot)
+    dev.off()
+  }
+}
+
+
+
+
+
 
 
 # ************************************************************************************************************************************************
@@ -4391,3 +5067,454 @@ for (i in 1:2) {
   }
 }
 
+
+
+
+### fig23 clonality with updated softfiltered pcawg (purplesoft3.2) and updated hmf (DR-104-update4)
+
+
+
+purple_timing <- read.csv(file = paste0(wd, "r-objects/all-final-update-purple-timing.txt.gz"), stringsAsFactors = F, header = T, sep = "\t")
+
+purple_timing <- merge(purple_timing, metadata_included[,c("sample_id", "cancer_type","cancer_type_code", "cohort")], by = "sample_id")
+
+
+
+
+purple_timing$tmb <- rowSums(purple_timing[,6:7])
+
+
+# nrow(purple_timing[is.na(purple_timing$subclonal),])
+
+purple_timing <- purple_timing[!is.na(purple_timing$subclonal),]
+cancer_types <- unique(purple_timing$cancer_type)
+cancer_type_abb <- unique(purple_timing$cancer_type_code)
+
+ff <- data.frame(cancer_type = character(59), cancer_type_abb = character(59), cancer_type_complete = character(59), median_clona_met = numeric(59), median_clona_prim = numeric(59))
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  cancer_type_complete <- paste0(cancer_type, " (", cancer_type_abb , ")")
+  tmp_df <- purple_timing[purple_timing$cancer_type == cancer_type & purple_timing$subclonal_tmb_80_cutoff != 0,]
+  
+  ff[i,1:3] <- c(cancer_type, cancer_type_abb, cancer_type_complete)
+  # print(cancer_type)
+  # print(head(tmp_df))
+  # print(nrow(tmp_df[tmp_df$cohort == "PCAWG",]))
+  # print(nrow(tmp_df[tmp_df$cohort == "HMF",]))
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    tmp_df_pcawg <- tmp_df$clonal_tmb_80_cutoff[tmp_df$cohort == "PCAWG"]/tmp_df$tmb[tmp_df$cohort == "PCAWG"]
+    tmp_df_hmf <- tmp_df$clonal_tmb_80_cutoff[tmp_df$cohort == "HMF"]/tmp_df$tmb[tmp_df$cohort == "HMF"]
+    res <- wilcox.test(tmp_df_pcawg, tmp_df_hmf)
+    # print(res$p.value)
+    if (res$p.value > 0.05){
+      ff[i,2] <- NA
+    }
+    ff[i,4:5] <- c(median(tmp_df_hmf, na.rm = T), median(tmp_df_pcawg, na.rm = T))
+  } else {
+    ff[i,4:5] <- rep(NA, times = 2)
+  }
+}
+
+
+
+
+ff$cancer_type <- factor(ff$cancer_type)
+ff$cancer_type_abb <- factor(ff$cancer_type_abb)
+
+
+
+plloott_median <- ff[!(is.na(ff$median_clona_met)) & !(is.na(ff$median_clona_prim)),] %>% ggplot(aes(x = 100*median_clona_prim, y = 100*median_clona_met, color = cancer_type_complete)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb), max.overlaps = 20) +
+  xlim(c(50,100)) +
+  xlab("primary median %") +
+  ylim(c(50,100)) +
+  ylab("Metastatsis median %") +
+  ggtitle("Percentage of Clonal mutations") +
+  labs(subtitle = "softfiltered PCAWG (purplesoft3.2) & strictfiltered HMF(DR-104-update4)") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw() +
+  labs(caption = "SUBCL >= 0.8: subclonal \n SUBCL < 0.8: clonlal")
+
+
+
+
+
+purple_timing_cp <- purple_timing
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  tmp_df <- purple_timing_cp[purple_timing_cp$cancer_type == cancer_type & purple_timing_cp$subclonal_tmb_80_cutoff != 0,]
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    
+  } else {
+    purple_timing_cp <- purple_timing_cp[purple_timing_cp$cancer_type != cancer_type,]
+  }
+}
+
+
+purple_timing_cp$cancer_type <- factor(purple_timing_cp$cancer_type)
+
+
+
+
+plloott_box <- purple_timing_cp[purple_timing_cp$subclonal_tmb != 0,] %>% ggplot(aes(x = cohort, y = clonal_tmb_80_cutoff/tmb, color = cancer_type_code)) + facet_wrap(~ cancer_type_code) +
+  geom_boxplot() +
+  # ggrepel::geom_text_repel(aes(label = cancer_type_abb)) +
+  # xlim(c(50,100)) +
+  xlab("Cohort") +
+  stat_compare_means(comparisons = list(c('PCAWG', 'HMF')), method = "wilcox.test", label = "p.signif") +
+  ylab("Percentage of Clonal mutations (HMF Pipeline)") +
+  ylim(c(0,1.5)) +
+  ggtitle("Distribution of clonality percentage per cancer type (HMF Pipeline)") 
+
+
+
+com_plot <- ggarrange(plloott_mean, plloott_median, plloott_box,  ncol=3, common.legend = TRUE, legend="bottom")
+
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig23-clonality-softfilter2-pcawg.png", height = 920, width = 1380)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig23-clonality-softfilter2-pcawg.pdf", height = 14, width = 21)
+    print(com_plot)
+    dev.off()
+  }
+}
+
+
+
+
+
+
+# using binned data
+
+
+
+ff <- data.frame(cancer_type = character(59), cancer_type_abb = character(59), cancer_type_complete = character(59), median_clona_met = numeric(59), median_clona_prim = numeric(59))
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  cancer_type_complete <- paste0(cancer_type, " (", cancer_type_abb , ")")
+  tmp_df <- purple_timing[purple_timing$cancer_type == cancer_type & purple_timing$subclonal_tmb_80_cutoff != 0,]
+  
+  ff[i,1:3] <- c(cancer_type, cancer_type_abb, cancer_type_complete)
+  # print(cancer_type)
+  # print(head(tmp_df))
+  # print(nrow(tmp_df[tmp_df$cohort == "PCAWG",]))
+  # print(nrow(tmp_df[tmp_df$cohort == "HMF",]))
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    tmp_df_pcawg <- tmp_df$clonal[tmp_df$cohort == "PCAWG"]/tmp_df$tmb[tmp_df$cohort == "PCAWG"]
+    tmp_df_hmf <- tmp_df$clonal[tmp_df$cohort == "HMF"]/tmp_df$tmb[tmp_df$cohort == "HMF"]
+    res <- wilcox.test(tmp_df_pcawg, tmp_df_hmf)
+    # print(res$p.value)
+    if (res$p.value > 0.05){
+      ff[i,2] <- NA
+    }
+    ff[i,4:5] <- c(median(tmp_df_hmf, na.rm = T), median(tmp_df_pcawg, na.rm = T))
+  } else {
+    ff[i,4:5] <- rep(NA, times = 2)
+  }
+}
+
+
+
+
+ff$cancer_type <- factor(ff$cancer_type)
+ff$cancer_type_abb <- factor(ff$cancer_type_abb)
+
+
+
+plloott_median_binned1 <- ff[!(is.na(ff$median_clona_met)) & !(is.na(ff$median_clona_prim)),] %>% ggplot(aes(x = 100*median_clona_prim, y = 100*median_clona_met, color = cancer_type_complete)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb), max.overlaps = 20) +
+  xlim(c(25,100)) +
+  xlab("primary median %") +
+  ylim(c(25,100)) +
+  ylab("Metastatsis median %") +
+  ggtitle("Percentage of Clonal mutations")  +
+  labs(subtitle = "softfiltered PCAWG (purplesoft3.2) & strictfiltered HMF (DR-104-update4)") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw() +
+  labs(caption = "SUBCL > 0: subclonal \n SUBCL = 0: clonlal")
+
+
+
+
+
+
+purple_timing_cp <- purple_timing
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  tmp_df <- purple_timing_cp[purple_timing_cp$cancer_type == cancer_type & purple_timing_cp$subclonal_tmb_80_cutoff != 0,]
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    
+  } else {
+    purple_timing_cp <- purple_timing_cp[purple_timing_cp$cancer_type != cancer_type,]
+  }
+}
+
+
+purple_timing_cp$cancer_type <- factor(purple_timing_cp$cancer_type)
+
+
+
+
+plloott_box_binned1 <- purple_timing_cp[purple_timing_cp$subclonal_tmb_80_cutoff != 0,] %>% ggplot(aes(x = cohort, y = clonal/tmb, color = cancer_type_code)) + facet_wrap(~ cancer_type_code) +
+  geom_boxplot() +
+  # ggrepel::geom_text_repel(aes(label = cancer_type_abb)) +
+  # xlim(c(50,100)) +
+  xlab("Cohort") +
+  stat_compare_means(comparisons = list(c('PCAWG', 'HMF')), method = "wilcox.test", label = "p.signif") +
+  ylab("Percentage of Clonal mutations (HMF Pipeline)") +
+  ylim(c(0,1.5)) +
+  ggtitle("Distribution of clonality percentage per cancer type") 
+
+
+
+com_plot <- ggarrange(plloott_mean_binned1, plloott_median_binned1, plloott_box_binned1,  ncol=3, common.legend = TRUE, legend="bottom")
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig23-1-clonality-softfilter2-pcawg-binned.png", height = 920, width = 1380)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig23-1-clonality-softfilter2-pcawg-binned.pdf", height = 14, width = 21)
+    print(com_plot)
+    dev.off()
+  }
+}
+
+
+
+
+
+# using binned data2
+
+
+
+ff <- data.frame(cancer_type = character(59), cancer_type_abb = character(59), cancer_type_complete = character(59), mean_clona_met = numeric(59), mean_clona_prim = numeric(59))
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  cancer_type_complete <- paste0(cancer_type, " (", cancer_type_abb , ")")
+  tmp_df <- purple_timing[purple_timing$cancer_type == cancer_type & purple_timing$subclonal_tmb_80_cutoff != 0,]
+  
+  ff[i,1:3] <- c(cancer_type, cancer_type_abb, cancer_type_complete)
+  # print(cancer_type)
+  # print(head(tmp_df))
+  # print(nrow(tmp_df[tmp_df$cohort == "PCAWG",]))
+  # print(nrow(tmp_df[tmp_df$cohort == "HMF",]))
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    tmp_df_pcawg <- (tmp_df$clonal[tmp_df$cohort == "PCAWG"] + tmp_df$probably_clonal[tmp_df$cohort == "PCAWG"])/tmp_df$tmb[tmp_df$cohort == "PCAWG"]
+    tmp_df_hmf <- (tmp_df$clonal[tmp_df$cohort == "HMF"] + tmp_df$probably_clonal[tmp_df$cohort == "HMF"])/tmp_df$tmb[tmp_df$cohort == "HMF"]
+    res <- wilcox.test(tmp_df_pcawg, tmp_df_hmf)
+    # print(res$p.value)
+    if (res$p.value > 0.05){
+      ff[i,2] <- NA
+    }
+    ff[i,4:5] <- c(mean(tmp_df_hmf, na.rm = T), mean(tmp_df_pcawg, na.rm = T))
+  } else {
+    ff[i,4:5] <- rep(NA, times = 2)
+  }
+}
+
+
+
+ff$cancer_type <- factor(ff$cancer_type)
+ff$cancer_type_abb <- factor(ff$cancer_type_abb)
+
+
+
+plloott_mean_binned2 <- ff[!(is.na(ff$mean_clona_met)) & !(is.na(ff$mean_clona_prim)),] %>% ggplot(aes(x = 100*mean_clona_prim, y = 100*mean_clona_met, color = cancer_type_complete)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb), max.overlaps = 20) +
+  xlim(c(50,100)) +
+  xlab("primary mean %") +
+  ylim(c(50,100)) +
+  ylab("Metastatsis mean %") +
+  ggtitle("Percentage of Clonal mutations") +
+  labs(subtitle = "softfiltered PCAWG (purplesoft3.2) & strictfiltered HMF (DR-104-update4)") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw() +
+  labs(caption = "SUBCL > quantile[50% of SUBCL != 0] & : subclonal \n SUBCL = 0 + SUBCL <= quantile[50% of SUBCL != 0]: clonlal")
+
+
+
+
+
+
+
+purple_timing_cp <- purple_timing
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  tmp_df <- purple_timing_cp[purple_timing_cp$cancer_type == cancer_type & purple_timing_cp$subclonal_tmb_80_cutoff != 0,]
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG",]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF",]) >= 5){
+    
+  } else {
+    purple_timing_cp <- purple_timing_cp[purple_timing_cp$cancer_type != cancer_type,]
+  }
+}
+
+
+purple_timing_cp$cancer_type <- factor(purple_timing_cp$cancer_type)
+
+
+
+
+plloott_box_binned2 <- purple_timing_cp[purple_timing_cp$subclonal_tmb_80_cutoff != 0,] %>% ggplot(aes(x = cohort, y = (clonal+probably_clonal)/tmb, color = cancer_type_code)) + facet_wrap(~ cancer_type_code) +
+  geom_boxplot() +
+  # ggrepel::geom_text_repel(aes(label = cancer_type_abb)) +
+  # xlim(c(50,100)) +
+  xlab("Cohort") +
+  stat_compare_means(comparisons = list(c('PCAWG', 'HMF')), method = "wilcox.test", label = "p.signif") +
+  ylab("Percentage of Clonal mutations (HMF Pipeline)") +
+  ylim(c(0,1.5)) +
+  ggtitle("Distribution of clonality percentage per cancer type") 
+
+
+
+com_plot <- ggarrange(plloott_mean_binned2, plloott_median_binned2, plloott_box_binned2,  ncol=3, common.legend = TRUE, legend="bottom")
+
+
+
+
+
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig23-1-clonality-softfilter2-pcawg-binned2.png", height = 920, width = 1380)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig23-1-clonality-softfilter2-pcawg-binned2.pdf", height = 14, width = 21)
+    print(com_plot)
+    dev.off()
+  }
+}
+
+
+
+
+
+### fig23 clonality with updated mutationtimer data
+
+mutationtimer_timing <- read.csv(file = paste0(wd, "r-objects/all-final-update-mutatiotimer-timing.txt.gz"), stringsAsFactors = F, header = T, sep = "\t")
+mutationtimer_timing <- mutationtimer_timing[!is.na(mutationtimer_timing$early_clonal),]
+
+mutationtimer_timing <- merge(mutationtimer_timing, metadata_included[,c(3,6,8,9,14,18,19,20,21,22,23,24)], by = "sample_id")
+
+mutationtimer_timing$tmb <- rowSums(mutationtimer_timing[,c(6,7)], na.rm = T)
+
+gg <- data.frame(cancer_type = character(59), cancer_type_abb = character(59), median_clona_prim = numeric(59), median_clona_met = numeric(59))
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  cancer_type_abb <- unique(metadata_included$cancer_type_code[metadata_included$cancer_type == cancer_type])
+  tmp_df <- mutationtimer_timing[mutationtimer_timing$cancer_type == cancer_type,]
+  
+  gg[i,1:2] <- c(cancer_type, cancer_type_abb)
+  
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG" & !is.na(tmp_df$total_clonal) & tmp_df$subclonal != 0,]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF" & !is.na(tmp_df$total_clonal) & tmp_df$subclonal != 0,]) >= 5){
+    
+    tmp_df_pcawg <- tmp_df$total_clonal[tmp_df$cohort == "PCAWG" & tmp_df$subclonal != 0]/tmp_df$tmb[tmp_df$cohort == "PCAWG" & tmp_df$subclonal != 0]
+    tmp_df_hmf <- tmp_df$total_clonal[tmp_df$cohort == "HMF" & tmp_df$subclonal != 0]/tmp_df$tmb[tmp_df$cohort == "HMF" & tmp_df$subclonal != 0]
+    res <- wilcox.test(tmp_df_pcawg, tmp_df_hmf)
+    
+    if (res$p.value > 0.05){
+      gg[i,2] <- NA
+    }
+    
+    gg[i,3:4] <- c(median(tmp_df_pcawg, na.rm = T), median(tmp_df_hmf, na.rm = T))
+    
+  } else {
+    gg[i,3:4] <- rep(NA, times = 2)
+  }
+}
+
+
+gg$cancer_type <- factor(gg$cancer_type)
+gg$cancer_type_abb <- factor(gg$cancer_type_abb)
+
+plloott_median <- gg[!(is.na(gg$median_clona_met)) & !(is.na(gg$median_clona_prim)),] %>% ggplot(aes(x = 100*median_clona_prim, y = 100*median_clona_met, color = cancer_type)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = cancer_type_abb), max.overlaps = 20) +
+  xlim(c(40,100)) +
+  xlab("primary median %") +
+  ylim(c(40,100)) +
+  ylab("Metastatsis median %") +
+  ggtitle("Percentage of Clonal mutations (mutationTimerR)") +
+  geom_abline(slope = 1,intercept = 0, lty = 2) +
+  theme_bw()
+
+
+
+mutationtimer_timing_cp <- mutationtimer_timing
+
+
+for (i in 1:length(cancer_types)){
+  cancer_type <- cancer_types[i]
+  tmp_df <- mutationtimer_timing_cp[mutationtimer_timing_cp$cancer_type == cancer_type,]
+  if (nrow(tmp_df[tmp_df$cohort == "PCAWG" & !is.na(tmp_df$total_clonal) & tmp_df$subclonal != 0,]) >= 5 & nrow(tmp_df[tmp_df$cohort == "HMF" & !is.na(tmp_df$total_clonal) & tmp_df$subclonal != 0,]) >= 5){
+    
+  } else {
+    mutationtimer_timing_cp <- mutationtimer_timing_cp[mutationtimer_timing_cp$cancer_type != cancer_type,]
+  }
+}
+
+
+mutationtimer_timing_cp$cancer_type <- factor(mutationtimer_timing_cp$cancer_type)
+
+
+mutationtimer_timing_cp <- mutationtimer_timing_cp[!is.na(mutationtimer_timing_cp$subclonal),]
+
+
+plloott_box <- mutationtimer_timing_cp[mutationtimer_timing_cp$subclonal != 0,] %>% ggplot(aes(x = cohort, y = total_clonal/tmb, color = cancer_type)) + facet_wrap(~ cancer_type) +
+  geom_boxplot() +
+  # ggrepel::geom_text_repel(aes(label = cancer_type_abb)) +
+  # xlim(c(50,100)) +
+  xlab("Metastatic") +
+  stat_compare_means(comparisons = list(c('PCAWG', 'HMF')), method = "wilcox.test", label = "p.signif") +
+  ylab("Percentage of Clonal mutations (HMF Pipeline)") +
+  ylim(c(0,1.5)) +
+  ggtitle("Distribution of clonality percentage per cancer type (mutationTimerR)") 
+
+
+
+
+
+
+com_plot <- ggarrange(plloott_mean, plloott_median, plloott_box, ncol=3, common.legend = TRUE, legend="bottom")
+
+for (i in 1:2) {
+  if (i == 1) {
+    png(filename = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/png/fig24-clonality-prim-vs-metas-per-cancer-final-update-mutationTimerR-2.png", height = 920, width = 1380)
+    print(com_plot)
+    dev.off()
+  }
+  if (i == 2) {
+    pdf(file = "/home/ali313/Documents/studies/master/umc-project/hpc/cuppen/projects/P0025_PCAWG_HMF/drivers/analysis/dna-rep-ann/explore/figs-wgd/pdf/fig24-clonality-prim-vs-metas-per-cancer-final-update-mutationTimerR-2.pdf", height = 14, width = 21)
+    print(com_plot)
+    dev.off()
+  }
+}
